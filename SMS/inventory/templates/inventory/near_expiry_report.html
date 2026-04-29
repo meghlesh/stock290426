@@ -1,0 +1,918 @@
+<!-- COMPLETE HTML FILE - Fully Updated and Formatted -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Near Expiry Report</title>
+    
+    <!-- === -->
+    <!-- EXTERNAL LIBRARIES -->
+    <!-- === -->
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jsPDF for PDF Download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- === -->
+    <!-- CUSTOM STYLES -->
+    <!-- === -->
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 4px; 
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 10px; 
+        }
+        
+        .active-nav { 
+            background-color: #4f46e5; 
+            color: white; 
+        }
+
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+
+        #sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #sidebar.collapsed nav a {
+            justify-content: center;
+        }
+
+        @media (min-width: 1024px) and (max-width: 1100px) {
+            .responsive-filter-form {
+                flex-wrap: wrap !important;
+                align-items: flex-start !important;
+            }
+
+            .responsive-filter-form > div {
+                flex: 1 48%;
+                min-width: unset !important;
+            }
+
+            .responsive-filter-buttons {
+                width: 100% !important;
+                flex-wrap: wrap !important;
+            }
+
+            .responsive-filter-buttons button,
+            .responsive-filter-buttons a {
+                flex: 1 24%;
+            }
+        }
+
+        #dropdownMenu {
+            max-width: 100%;
+        }
+
+        /* Loader CSS */
+        .box-loader {
+            width: 80px; 
+            height: 80px; 
+            background: #4f46e5;
+            position: relative; 
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px; 
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        
+        .box-loader::after { 
+            content: ''; 
+            position: absolute; 
+            top: 50%; 
+            left: 0; 
+            width: 100%; 
+            height: 4px; 
+            background: #3730a3; 
+            transform: translateY(-50%); 
+        }
+        
+        .box-loader::before { 
+            content: ''; 
+            position: absolute; 
+            top: 0; 
+            left: 50%; 
+            width: 4px; 
+            height: 100%; 
+            background: #3730a3; 
+            transform: translateX(-50%); 
+        }
+        
+        @keyframes box-bounce {
+            0%, 100% { 
+                transform: translateY(0) rotate(0deg); 
+            }
+            50% { 
+                transform: translateY(-35px) rotate(8deg); 
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+<!-- === -->
+<!-- LOADER & LOGOUT MODAL -->
+<!-- === -->
+
+<!-- Logout Loader -->
+<div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+    <div class="box-loader"></div>
+    <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+    <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+</div>
+
+<!-- Logout Modal -->
+<div id="logout-modal" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+    <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100" id="modal-content">
+        <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+            <i data-lucide="log-out" class="w-10 h-10"></i>
+        </div>
+        
+        <h3 class="text-3xl font-bold text-slate-900 text-center">Ready to go?</h3>
+        
+        <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">
+            Confirm to sign out of your portal.
+        </p>
+        
+        <div class="flex flex-col gap-3">
+            <form id="logout-form" action="{% url 'company_logout' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 transition-colors">
+                    Yes, Log me out
+                </button>
+            </form>
+            <button onclick="closeLogoutModal()" class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-colors">
+                Stay here
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- === -->
+<!-- MAIN APPLICATION LAYOUT -->
+<!-- === -->
+<div class="flex h-screen">
+    
+    <!-- Mobile Overlay -->
+    <div id="overlay" class="fixed inset-0 bg-slate-900/40 z-30 hidden md:hidden"></div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 transform -translate-x-full md:translate-x-0 transition-all duration-300">
+        
+        <!-- Sidebar Header -->
+        <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div class="overflow-hidden sidebar-text">
+                <h1 class="font-bold text-lg truncate">{{ company.name|default:"Acme Corp" }}</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enterprise</p>
+            </div>
+        </div>
+        
+        <!-- Sidebar Navigation -->
+                                            <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'fast_slow_products_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Administration</p>
+                </div>
+                
+                <div class="ml-6 mt-2 space-y-1 sidebar-text">
+                    <a href="{% url 'reports' %}"
+                    class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'reports' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="file-text" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Sales Reports</span>
+                    </a>
+
+                    <a href="{% url 'purchase_stock_report_view' %}"
+                    class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'purchase_stock_report_view' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Purchase Stock Reports</span>
+                    </a>
+
+                    <a href="{% url 'fast_slow_products_view' %}"
+                    class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'fast_slow_products_view' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="trending-up" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Fast & Slow-Moving Products</span>
+                    </a>
+
+                    <a href="{% url 'supplier_performance' %}"
+                       class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'supplier_performance' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="truck" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Supplier Performance</span>
+                    </a>
+
+                    <a href="{% url 'near_expiry_report_view' %}"
+                   class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'near_expiry_report_view' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Near-Expiry Report</span>
+                    </a>
+
+                    <a href="{% url 'expired_stock_report' %}"
+                   class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'expired_stock_report' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="x-circle" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Expired Stock Report</span>
+                    </a>
+
+                    <a href="{% url 'profit_margin_report' %}"
+                       class="flex items-center gap-3 px-4 py-2 text-sm {% if request.resolver_match.url_name == 'profit_margin_report' %}active-nav text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                        <i data-lucide="percent" class="w-4 h-4"></i>
+                        <span class="sidebar-text">Profit Margin Reports</span>
+                    </a>
+                </div>
+            </nav>
+        
+        <!-- Sidebar Footer (Logout) -->
+        <div class="p-4 border-t border-slate-100">
+            <button onclick="openLogoutModal()" class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+                <span class="sidebar-text">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- === -->
+    <!-- MAIN CONTENT AREA -->
+    <!-- === -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Top Header -->
+        <header class="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-8">
+            <div class="flex items-center gap-4">
+                <button id="toggle-sidebar" class="p-2 hover:bg-slate-100 rounded-lg transition-colors">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                <div class="text-sm text-slate-500">
+                    <a href="{% url 'reports' %}" class="hover:text-indigo-600 transition-colors">
+                        Reports
+                    </a>
+                    <span class="mx-1">›</span>
+                    <span class="font-semibold text-slate-800">
+                        Near Expiry Report
+                    </span>
+                </div>
+            </div>
+
+            <!-- User Avatar -->
+            <div class="h-9 w-9 bg-indigo-600 rounded-full text-white flex items-center justify-center font-bold">
+                {{ request.user.username|slice:":1"|upper|default:"A" }}
+            </div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+            <div class="max-w-7xl mx-auto space-y-6">
+                
+                <!-- Page Title -->
+                <div>
+                    <h2 class="text-2xl font-bold">Near Expiry Report</h2>
+                    <p class="text-sm text-slate-500">Monitor products expiring within {{ days|default:30 }} days</p>
+                </div>
+
+                <!-- === -->
+                <!-- FILTER FORM & BUTTONS -->
+                <!-- === -->
+                <div class="flex flex-col lg:flex-row lg:justify-between gap-4">
+                    
+                    <!-- Fixed layout classes: removed max-w limits so inputs match perfectly on mobile -->
+                    <form method="get" class="flex flex-col lg:flex-row gap-4 w-full lg:w-auto lg:items-end responsive-filter-form">
+                        
+                        <!-- Days Filter -->
+                        <!-- Mobile: takes full width. Desktop: strict width lg:w-48 -->
+                        <div class="flex flex-col w-full lg:w-48">
+                            <label class="text-xs text-slate-500 mb-1 font-medium">Days to Expiry</label>
+                            <input 
+                                type="number" 
+                                name="days" 
+                                value="{{ days }}" 
+                                min="1" 
+                                max="365" 
+                                class="w-full border border-slate-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 h-10"
+                            >
+                        </div>
+                        
+                        <!-- Product Filter -->
+                        <!-- Mobile: takes full width matching above. Desktop: strict width lg:w-64 -->
+                        <div class="flex flex-col w-full lg:w-64">
+                            <label class="text-xs text-slate-500 mb-1 font-medium">Filter Product</label>
+                            
+                            <!-- Dropdown Container -->
+                            <div class="relative w-full">
+                                <button 
+                                    id="dropdownBtn" 
+                                    type="button" 
+                                    onclick="toggleDropdown()" 
+                                    class="w-full border border-slate-300 px-3 py-2 rounded-lg text-sm text-left bg-white flex justify-between items-center h-10"
+                                >
+                                    <!-- Added truncate to prevent long text from breaking layout -->
+                                    <span id="selectedText" class="truncate pr-2">All Products</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 flex-shrink-0"></i>
+                                </button>
+
+                                <!-- Dropdown Menu -->
+                                <div 
+                                    id="dropdownMenu" 
+                                    class="hidden absolute left-0 right-0 z-50 bg-white border mt-1 rounded-lg max-h-60 overflow-y-auto shadow-lg"
+                                >
+                                    <div onclick="selectProduct('')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer">
+                                        All Products
+                                    </div>
+
+                                    {% for product in products %}
+                                    <div onclick="selectProduct('{{ product.id }}')" class="px-3 py-2 hover:bg-slate-100 cursor-pointer truncate">
+                                        {{ product.name }}
+                                    </div>
+                                    {% endfor %}
+                                </div>
+
+                                <input type="hidden" name="product_id" id="productInput">
+                            </div>
+                        </div>
+                        
+                        <!-- Actions Buttons -->
+                        <!-- Mobile stacked or grid, Desktop row -->
+                        <div class="flex flex-col sm:flex-row gap-2 w-full lg:w-auto responsive-filter-buttons">
+                            
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm h-10 flex items-center justify-center gap-2 flex-1 min-w-[85px] transition-colors">
+                                Filter
+                            </button>
+
+                            <a href="{% url 'near_expiry_report_view' %}" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm h-10 flex items-center justify-center gap-2 flex-1 min-w-[85px] transition-colors">
+                                Reset
+                            </a>
+                            
+                            <button type="button" onclick="exportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm h-10 flex items-center justify-center gap-2 flex-1 min-w-[120px] whitespace-nowrap transition-colors">
+                                <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Export Excel
+                            </button>
+
+                            <button type="button" onclick="downloadPDF(event)" class="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg text-sm h-10 flex items-center justify-center gap-2 flex-1 min-w-[120px] whitespace-nowrap transition-colors">
+                                Export PDF
+                            </button>
+                            
+                        </div>
+                    </form>
+                </div>
+
+                <!-- === -->
+                <!-- CHART SECTION -->
+                <!-- === -->
+                <div class="bg-white border rounded-2xl p-4 sm:p-6 shadow-sm">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-sm sm:text-base">{{ chart_title|default:"Near Expiry Overview" }}</h3>
+                        <span class="text-xs text-slate-500">{{ total_items|default:0 }} products</span>
+                    </div>
+                    <div class="relative w-full h-[320px] sm:h-[450px]">
+                        <canvas id="expiryChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- === -->
+                <!-- TABLE SECTION -->
+                <!-- === -->
+                <div class="bg-white border rounded-2xl shadow-sm overflow-hidden">
+                    <div class="p-6 font-bold border-b text-lg">
+                        Near Expiry Products 
+                        <span class="text-sm font-normal text-slate-500">({{ total_items|default:0 }} found)</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-slate-50 text-xs uppercase text-slate-500 font-bold">
+                                <tr>
+                                    <th class="px-6 py-3 text-left">Product</th>
+                                    <th class="px-6 py-3 text-left">Category</th>
+                                    <th class="px-6 py-3 text-left">Batch</th>
+                                    <th class="px-6 py-3 text-left">Expiry Date</th>
+                                    <th class="px-6 py-3 text-left">Days Left</th>
+                                    <th class="px-6 py-3 text-left">Quantity</th>
+                                    <th class="px-6 py-3 text-left">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in table_data %}
+                                <tr class="border-t hover:bg-slate-50 transition-colors">
+                                    <td class="px-6 py-3 font-semibold">{{ item.product }}</td>
+                                    <td class="px-6 py-3 text-slate-600">{{ item.category }}</td>
+                                    <td class="px-6 py-3 text-slate-600">{{ item.batch_number }}</td>
+                                    <td class="px-6 py-3">{{ item.expiry_date|date:"M d, Y" }}</td>
+                                    
+                                    <td class="px-6 py-3 font-bold text-lg {% if item.days_left <= 3 %}text-rose-600{% elif item.days_left <= 7 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+                                        {{ item.days_left }}
+                                    </td>
+                                    
+                                    <td class="px-6 py-3">{{ item.quantity|floatformat:0 }}</td>
+                                    
+                                    <td>
+                                        {% if item.status == 'CRITICAL' %}
+                                            <span class="px-3 py-1 bg-rose-100 text-rose-800 text-xs font-bold rounded-full">CRITICAL</span>
+                                        {% elif item.status == 'WARNING' %}
+                                            <span class="px-3 py-1 bg-amber-100 text-amber-800 text-xs font-bold rounded-full">WARNING</span>
+                                        {% else %}
+                                            <span class="px-3 py-1 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full">CAUTION</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="7" class="text-center py-12 text-slate-400">
+                                        No near expiry products found
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- === -->
+<!-- JAVASCRIPT LOGIC - UI & SIDEBAR -->
+<!-- === -->
+<script>
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    // DOM Elements
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const backdrop = document.getElementById('overlay');
+    const sidebarTexts = document.querySelectorAll('.sidebar-text');
+
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    function openSidebarMobile() {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebarMobile() {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        if (isMobile()) {
+            // Mobile behavior
+            if (sidebar.classList.contains('-translate-x-full')) {
+                openSidebarMobile();
+            } else {
+                closeSidebarMobile();
+            }
+        } else {
+            // Desktop Collapse Behavior
+            if (sidebar.classList.contains('w-64')) {
+                // Collapse
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-20');
+                sidebar.classList.toggle('collapsed');
+            } else {
+                // Expand
+                sidebar.classList.remove('w-20');
+                sidebar.classList.add('w-64');
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+    });
+
+    // Close when clicking outside (mobile only)
+    backdrop.addEventListener('click', closeSidebarMobile);
+
+    // Auto close when clicking a link (mobile)
+    sidebar.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (isMobile()) {
+                closeSidebarMobile();
+            }
+        });
+    });
+
+    // Reset sidebar state on resize
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            backdrop.classList.add('hidden');
+            sidebar.classList.remove('-translate-x-full');
+            document.body.classList.remove('overflow-hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+</script>
+
+<!-- === -->
+<!-- JAVASCRIPT LOGIC - CHART.JS & EXPORT -->
+<!-- === -->
+<script>
+    // Chart.js Configuration
+    const chartCanvas = document.getElementById("expiryChart");
+    
+    if (chartCanvas) {
+        const ctx = chartCanvas.getContext('2d');
+        
+        // Safely extract Django context variables, providing fallback for preview environments
+        const rawCritical = '{{ status_counts.critical }}';
+        const rawWarning = '{{ status_counts.warning }}';
+        const rawCaution = '{{ status_counts.caution }}';
+        
+        // If unrendered by Django (contains '{{'), use mock data. Otherwise parse the number.
+        const criticalCount = rawCritical.includes('{{') ? 12 : Number(rawCritical);
+        const warningCount = rawWarning.includes('{{') ? 18 : Number(rawWarning);
+        const cautionCount = rawCaution.includes('{{') ? 35 : Number(rawCaution);
+        
+        new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: [
+                    'Critical', 
+                    'Warning', 
+                    'Caution'
+                ],
+                datasets: [
+                    {
+                        label: 'Near Expiry Items',
+                        data: [
+                            criticalCount, 
+                            warningCount, 
+                            cautionCount
+                        ],
+                        backgroundColor: [
+                            '#ef4444', 
+                            '#f59e0b', 
+                            '#10b981'
+                        ],
+                        borderRadius: 12,
+                        barPercentage: 0.6,
+                        categoryPercentage: 0.6
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { 
+                    padding: { 
+                        top: 40 
+                    } 
+                },
+                plugins: { 
+                    legend: { 
+                        display: false 
+                    } 
+                },
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        grid: { 
+                            color: "#f1f5f9" 
+                        }, 
+                        ticks: { 
+                            stepSize: 1 
+                        } 
+                    },
+                    x: { 
+                        grid: { 
+                            display: false 
+                        } 
+                    }
+                },
+                animation: {
+                    onComplete: function() {
+                        const chartInstance = this;
+                        const ctx = chartInstance.ctx;
+                        
+                        ctx.font = 'bold 16px Inter';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.fillStyle = '#1e293b';
+                        
+                        this.data.datasets[0].data.forEach((value, index) => {
+                            const meta = this.getDatasetMeta(0);
+                            const bar = meta.data[index];
+                            ctx.fillText(value, bar.x, bar.y - 10);
+                        });
+                    }
+                }
+            }
+        });
+    }
+
+    // ===
+    // EXCEL EXPORT FUNCTION
+    // ===
+    function exportExcel() {
+        const data = [
+            [
+                'Product', 
+                'Category', 
+                'Batch', 
+                'Expiry Date', 
+                'Days Left', 
+                'Quantity', 
+                'Status'
+            ]
+        ];
+        
+        const rows = document.querySelectorAll('table tbody tr');
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            
+            if (cells.length >= 6) {
+                const rowData = Array.from(cells).slice(0, 7).map(cell => {
+                    let text = cell.textContent.trim();
+                    return `"${text.replace(/"/g, '""')}"`;
+                });
+                
+                data.push(rowData);
+            }
+        });
+        
+        const csv = data.map(row => row.join(',')).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        
+        link.href = URL.createObjectURL(blob);
+        link.download = `near-expiry-${new Date().toISOString().slice(0,10)}.csv`;
+        
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    // ===
+    // PDF DOWNLOAD FUNCTION
+    // ===
+    function downloadPDF(event) {
+        const pdfBtn = event.target.closest('button');
+        const originalText = pdfBtn.innerHTML;
+
+        pdfBtn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Generating...';
+        pdfBtn.disabled = true;
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        // Title styling
+        doc.setFontSize(20);
+        doc.setFont('helvetica', 'bold');
+        doc.text("Near Expiry Report", 15, 20);
+
+        doc.setFontSize(12);
+        doc.text(`(${new Date().toLocaleDateString('en-IN')})`, 15, 30);
+
+        doc.setFontSize(11);
+        doc.text(`Days: {{ days|default:"30" }} | Total Items: {{ total_items|default:"0" }}`, 15, 40);
+
+        // Fixed Column Alignment for table
+        const col = {
+            product: 15,
+            category: 55,
+            batch: 85,
+            expiry: 115,
+            days: 140,
+            qty: 155,
+            status: 170
+        };
+
+        // Table Headers
+        doc.setFontSize(10);
+        doc.setFont('helvetica', 'bold');
+
+        doc.text("Product", col.product, 55);
+        doc.text("Category", col.category, 55);
+        doc.text("Batch", col.batch, 55);
+        doc.text("Expiry", col.expiry, 55);
+        doc.text("Days", col.days, 55);
+        doc.text("Qty", col.qty, 55);
+        doc.text("Status", col.status, 55);
+
+        // Separator line
+        doc.line(15, 58, 195, 58);
+
+        // Table Data rows
+        doc.setFont('helvetica', 'normal');
+
+        let y = 68;
+        const rows = document.querySelectorAll("table tbody tr");
+
+        rows.forEach(row => {
+            const cells = row.querySelectorAll("td");
+
+            if (cells.length >= 6) {
+                let product = cells[0].innerText.trim();
+                let category = cells[1].innerText.trim();
+                let batch = cells[2].innerText.trim();
+                let expiry = cells[3].innerText.trim();
+                let days = cells[4].innerText.trim();
+                let qty = cells[5].innerText.trim();
+                let status = cells[6].innerText.trim();
+
+                doc.text(product, col.product, y);
+                doc.text(category, col.category, y);
+                doc.text(batch, col.batch, y);
+                doc.text(expiry, col.expiry, y);
+                doc.text(days, col.days, y);
+                doc.text(qty, col.qty, y);
+                doc.text(status, col.status, y);
+
+                y += 8;
+
+                // Add new page if reaching the bottom
+                if (y > 270) {
+                    doc.addPage();
+                    y = 20;
+                }
+            }
+        });
+
+        // PDF Footer
+        doc.setFontSize(9);
+        doc.text(`Generated: ${new Date().toLocaleString('en-IN')}`, 15, y + 15);
+
+        // Save PDF
+        doc.save(`near-expiry-${new Date().toISOString().slice(0,10)}.pdf`);
+
+        // Reset button state
+        setTimeout(() => {
+            pdfBtn.innerHTML = originalText;
+            pdfBtn.disabled = false;
+            lucide.createIcons();
+        }, 800);
+    }
+
+    // ===
+    // LOGOUT MODAL FUNCTIONS
+    // ===
+    function openLogoutModal() {
+        const modal = document.getElementById("logout-modal");
+        const content = document.getElementById("modal-content");
+        
+        modal.classList.remove("hidden");
+        setTimeout(() => content.classList.remove("scale-95", "opacity-0"), 10);
+    }
+    
+    function closeLogoutModal() {
+        const modal = document.getElementById("logout-modal");
+        const content = document.getElementById("modal-content");
+        
+        content.classList.add("scale-95", "opacity-0");
+        setTimeout(() => modal.classList.add("hidden"), 200);
+    }
+    
+    document.getElementById("logout-form")?.addEventListener("submit", function () {
+        document.getElementById("logout-modal").classList.add("hidden");
+        document.getElementById("logout-loader").classList.remove("hidden");
+    });
+</script>
+
+<!-- === -->
+<!-- DROPDOWN LOGIC -->
+<!-- === -->
+<script> 
+    function toggleDropdown() {
+        document.getElementById("dropdownMenu").classList.toggle("hidden");
+    }
+
+    function selectProduct(id, name) {
+        document.getElementById("productInput").value = id;
+        document.getElementById("selectedText").innerText = name || "All Products";
+        document.getElementById("dropdownMenu").classList.add("hidden");
+    }
+
+    // OUTSIDE CLICK CLOSE LOGIC
+    document.addEventListener("click", function(event) {
+        const dropdown = document.getElementById("dropdownMenu");
+        const button = document.getElementById("dropdownBtn");
+
+        // Validate if elements exist to prevent errors on rapid clicks
+        if(dropdown && button) {
+            if (!dropdown.contains(event.target) && !button.contains(event.target)) {
+                dropdown.classList.add("hidden");
+            }
+        }
+    });  
+</script>
+
+</body>
+</html>

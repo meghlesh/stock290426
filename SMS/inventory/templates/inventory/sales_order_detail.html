@@ -1,0 +1,658 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ company.name }} | Order {{ order.order_number }}</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+
+
+         /* --- Packing Loader Animation Styles --- */
+        .box-loader {
+            width: 80px;
+            height: 80px;
+            background: #4f46e5;
+            position: relative;
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .box-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3730a3;
+            transform: translateY(-50%);
+        }
+
+        .box-loader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3730a3;
+            transform: translateX(-50%);
+        }
+
+        @keyframes box-bounce {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-35px) rotate(8deg);
+            }
+        }
+        .mobile-closed {
+            transform: translateX(-100%);
+        }
+
+        .mobile-open {
+            transform: translateX(0);
+        }
+
+        /* Custom Dropdown Adjustments to bypass Chrome zoom bug */
+        .custom-dropdown-open .dropdown-btn {
+            border-color: #4f46e5 !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 0 0 4px rgb(79 70 229 / 10%) !important;
+        }
+        .custom-dropdown-open .dropdown-icon {
+            transform: rotate(180deg);
+        }
+
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden w-full max-w-full">
+    <!-- LOGOUT LOADER -->
+ <!-- PACKING LOADER OVERLAY -->
+    <div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden w-full max-w-full">
+        <div class="box-loader"></div>
+        <div class="conveyor-belt"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logout-modal"
+        class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden w-full max-w-full">
+        <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100"
+            id="modal-content">
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-slate-900 text-center">Ready to go?</h3>
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">Confirm to sign out of your portal. We'll
+                make sure your session is closed securely.</p>
+            <div class="flex flex-col gap-3 w-full">
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+                <button onclick="closeLogoutModal()"
+                    class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden w-full max-w-full">
+        <div id="sidebar-overlay"
+             class="fixed inset-0 bg-black/40 z-[50] hidden md:hidden"></div>
+        
+        <!-- Sidebar (Consistent with Portal) -->
+       <aside id="sidebar"
+              class="fixed top-0 left-0 h-screen md:h-full md:relative z-[60] md:z-auto w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 transform -translate-x-full md:translate-x-0">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100 w-full">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div class="overflow-hidden sidebar-text">
+                    <h1 class="font-bold text-lg leading-none truncate">{{ company.name }}</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Enterprise</p>
+                </div>
+            </div>
+
+                                    <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-100 w-full">
+                <button onclick="openLogoutModal()"
+                    class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">                    
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto w-full max-w-full">
+            
+            <!-- Header -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0 w-full max-w-full">
+                <div class="flex items-center gap-4 min-w-0">
+                    <button id="toggle-sidebar" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    <nav class="flex text-sm text-slate-500 gap-2 items-center overflow-hidden whitespace-nowrap">
+                        <a href="{% url 'company_dashboard' %}" class="hover:text-indigo-600 transition-colors truncate">Dashboard</a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                        <a href="{% url 'sales_orders' %}" class="hover:text-indigo-600 transition-colors truncate">Orders</a>
+                    </nav>
+                </div>
+
+                <div class="flex items-center gap-4 shrink-0">
+                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-full">
+                
+                <div class="max-w-6xl mx-auto space-y-6 w-full">
+                    
+                    <!-- Title and Status Area -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 w-full">
+                        <!--22-1-26-->
+                        {% if messages %}
+                        <div id="toast-container"
+                             class="fixed top-6 left-1/2 -translate-x-1/2 z-[70] space-y-3">
+                            {% for message in messages %}
+                            <div class="toast px-6 py-4 rounded-xl text-sm font-semibold shadow-lg border
+                                {% if message.tags == 'error' %}
+                                    bg-rose-100 text-rose-700 border-rose-200
+                                {% elif 'delivered' in message|stringformat:'s'|lower %}
+                                    bg-emerald-100 text-emerald-700 border-emerald-200
+                                {% else %}
+                                    bg-amber-100 text-amber-700 border-amber-200
+                                {% endif %}">
+                                {{ message }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                        <!--22-1-26-->
+
+                        <div class="flex items-center gap-4 w-full min-w-0">
+                            <div class="min-w-0 flex-1">
+                                <h2 class="text-2xl font-bold tracking-tight text-slate-900 truncate">Order {{ order.order_number }}</h2>
+                                <p class="text-slate-500 text-sm truncate">Placed on {{ order.created_at|date:"M d, Y"|default:"Recently" }}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Status Badge -->
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0">
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">Current Status:</span>
+                                {% if order.status|upper == 'DELIVERED' %}
+                                    <span class="px-4 py-1.5 bg-emerald-100 text-emerald-700 text-xs font-black uppercase rounded-full border border-emerald-200">
+                                        {{ order.status }}
+                                    </span>
+                                {% elif order.status|upper == 'CANCELLED' %}
+                                    <span class="px-4 py-1.5 bg-rose-100 text-rose-700 text-xs font-black uppercase rounded-full border border-rose-200">
+                                        {{ order.status }}
+                                    </span>
+                                {% else %}
+                                    <span class="px-4 py-1.5 bg-amber-100 text-amber-700 text-xs font-black uppercase rounded-full border border-amber-200">
+                                        {{ order.status }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex justify-end mb-2 sm:mb-0 sm:ml-4">
+                                <a href="{% url 'sales_orders' %}" 
+                                   class="inline-flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-indigo-600 transition-all">
+                                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                    <span>Back to Orders</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 w-full max-w-full">
+                        
+                        <!-- Left Column: Items List -->
+                        <div class="lg:col-span-2 space-y-6 w-full min-w-0">
+                            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden w-full max-w-full">
+                                <div class="p-6 border-b border-slate-100 flex items-center justify-between w-full">
+                                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                        <i data-lucide="list" class="w-4 h-4 text-indigo-600"></i>
+                                        Order Items
+                                    </h3>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">{{ order.items.all|length }} Items</span>
+                                </div>
+                                <div class="overflow-x-auto w-full max-w-full">
+                                    <table class="w-full text-left min-w-[600px]">
+                                        <thead class="bg-slate-50/50 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                                            <tr>
+                                                <th class="px-8 py-4">Product</th>
+                                                <th class="px-8 py-4 text-center">Quantity</th>
+                                                <th class="px-8 py-4 text-right">Unit Price</th>
+                                                <th class="px-8 py-4 text-right">Subtotal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                     {% for i in items %}
+                                        <tr class="hover:bg-slate-50/50 transition-colors">
+                                          <td class="px-8 py-5">
+                                            <div class="flex items-center gap-3">
+                                              <div class="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                                                {{ i.product.name|slice:":1"|upper }}
+                                              </div>
+                                              <span class="font-semibold text-slate-800 text-sm truncate">{{ i.product.name }}</span>
+                                            </div>
+                                          </td>
+
+                                          <td class="px-8 py-4 text-center">{{ i.quantity }}</td>
+                                          <td class="px-8 py-4 text-right">₹{{ i.price }}</td>
+                                          <td class="px-8 py-4 text-right">₹{{ i.subtotal }}</td>
+                                        </tr>
+                                     {% endfor %}
+                                        </tbody>
+                                        <tfoot class="bg-slate-50/30 border-t border-slate-100">
+                                            <tr>
+                                                <td colspan="3" class="px-8 py-4 text-right text-sm font-semibold text-slate-500">Order Total</td>
+                                                <td class="px-8 py-4 text-right text-xl font-black text-indigo-600 tracking-tight">₹{{ order.total_amount }}</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Actions and Summary -->
+                        <div class="space-y-6 w-full min-w-0">
+                            
+                            <!-- Status Update Card -->
+                            <!-- FIX: Set z-20 instead of z-50 so the sidebar (z-60) correctly overlaps it on mobile -->
+                            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm relative z-20 w-full max-w-full">
+                                <div class="p-6 border-b border-slate-100 bg-slate-50/50 w-full rounded-t-2xl">
+                                    <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                        <i data-lucide="refresh-cw" class="w-4 h-4 text-indigo-600"></i>
+                                        Update Fulfillment
+                                    </h3>
+                                </div>
+                                <div class="p-6 w-full max-w-full">
+                                    <form method="post" action="{% url 'update_order_status' order.id %}" class="space-y-4 w-full">
+                                        {% csrf_token %}
+                                        <div class="w-full min-w-0 relative">
+                                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Change Status To</label>
+                                            <div class="relative group w-full min-w-0">
+                                                <select name="status"
+                                                    class="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl
+                                                           focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none
+                                                           transition-all appearance-none font-bold text-sm text-slate-700
+                                                           {% if order.status == 'DELIVERED' or order.status == 'CANCELLED' %}
+                                                           opacity-60 cursor-not-allowed
+                                                           {% else %}
+                                                           cursor-pointer
+                                                           {% endif %}"
+                                                    {% if order.status == 'DELIVERED' or order.status == 'CANCELLED' %}disabled{% endif %}>
+                                                    <option value="PENDING" {% if order.status == 'PENDING' %}selected{% endif %}>PENDING</option>
+                                                    <option value="PROCESSING" {% if order.status == 'PROCESSING' %}selected{% endif %}>PROCESSING</option>
+                                                    <option value="DELIVERED" {% if order.status == 'DELIVERED' %}selected{% endif %}>DELIVERED</option>
+                                                    <option value="CANCELLED" {% if order.status == 'CANCELLED' %}selected{% endif %}>CANCELLED</option>
+                                                </select>
+                                                <i data-lucide="chevron-down" class="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none native-chevron hidden"></i>
+                                            </div>
+                                        </div>
+                                       {% if order.status != 'DELIVERED' and order.status != 'CANCELLED' %}
+                                        <button type="submit"
+                                            class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl
+                                                   shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all
+                                                   flex items-center justify-center gap-2 mt-4">
+                                            <i data-lucide="check" class="w-4 h-4"></i>
+                                            Save Status
+                                        </button>
+                                        {% endif %}
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Quick Customer Info -->
+                           <!-- FIX: added relative z-10 so the card above (z-20) correctly overlaps this one when dropdown opens -->
+                           <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4 w-full max-w-full relative z-10">
+                                <h3 class="text-xs font-black text-slate-400 uppercase tracking-widest">Customer Insight</h3>
+                                <div class="flex items-center gap-4 w-full min-w-0">
+                                    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 shrink-0">
+                                        <i data-lucide="user" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-bold text-slate-800 truncate" title="{{ order.customer_name }}">{{ order.customer_name }}</p>
+                                        <p class="text-xs text-slate-500">Primary Contact</p>
+                                    </div>
+                                </div>
+                               <div class="pt-2 w-full">
+                                    <a href="{% url 'sales_orders' %}?customer={{ order.customer_name|urlencode }}"
+                                       class="block w-full text-center py-2 bg-slate-100 text-slate-600
+                                              rounded-lg text-xs font-bold hover:bg-slate-200 transition-colors">
+                                        View Customer History
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // ==== DYNAMIC CUSTOM SELECT ENGINE ====
+        // This engine converts native <select> into custom HTML divs to completely bypass Chrome's 75% zoom emulator bug
+        function initCustomSelects() {
+            const selects = document.querySelectorAll('select:not([data-customized])');
+            
+            selects.forEach(select => {
+                select.setAttribute('data-customized', 'true');
+                select.style.display = 'none'; // Hide native select
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'custom-dropdown relative w-full';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                // Styles mimicking your specific Tailwind select setup
+                btn.className = 'dropdown-btn w-full flex items-center justify-between pl-4 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-700 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white';
+                
+                // Check disabled state
+                if (select.disabled) {
+                    btn.disabled = true;
+                    btn.classList.add('cursor-not-allowed', 'opacity-60');
+                } else {
+                    btn.classList.add('cursor-pointer');
+                }
+
+                const selectedText = document.createElement('span');
+                selectedText.className = 'selected-text truncate pr-4 text-left flex-1';
+                const initialSelected = Array.from(select.options).find(opt => opt.selected) || select.options[0];
+                selectedText.innerText = initialSelected ? initialSelected.text : 'Select...';
+                
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', 'chevron-down');
+                icon.className = 'dropdown-icon w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200';
+
+                btn.appendChild(selectedText);
+                btn.appendChild(icon);
+
+                const menu = document.createElement('div');
+                // Ensure it drops down strictly inside boundaries and has a massive z-index to overlay everything inside the card
+                menu.className = 'dropdown-menu absolute hidden top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-lg z-[999] max-h-60 overflow-y-auto origin-top transition-all';
+
+                Array.from(select.options).forEach(opt => {
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item px-4 py-3 text-sm font-bold hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors text-slate-700';
+                    item.innerText = opt.text;
+                    item.dataset.value = opt.value;
+                    
+                    // Highlight initially selected
+                    if (select.value === opt.value) {
+                         item.classList.add('bg-indigo-50/50', 'text-indigo-700');
+                    }
+
+                    item.addEventListener('click', () => {
+                        selectedText.innerText = item.innerText;
+                        select.value = opt.value;
+                        
+                        // Reset styling for all items, add styling to selected
+                        Array.from(menu.children).forEach(c => c.classList.remove('bg-indigo-50/50', 'text-indigo-700'));
+                        item.classList.add('bg-indigo-50/50', 'text-indigo-700');
+
+                        // Dispatch change event
+                        select.dispatchEvent(new Event('change'));
+                        
+                        menu.classList.add('hidden');
+                        wrapper.classList.remove('custom-dropdown-open');
+                    });
+                    menu.appendChild(item);
+                });
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (select.disabled) return;
+                    
+                    const isHidden = menu.classList.contains('hidden');
+                    
+                    // Close all other open dropdowns
+                    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                    document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+                    
+                    if (isHidden) {
+                        menu.classList.remove('hidden');
+                        wrapper.classList.add('custom-dropdown-open');
+                    }
+                });
+
+                wrapper.appendChild(btn);
+                wrapper.appendChild(menu);
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+
+                // Hide the hardcoded lucide icon fallback if it exists
+                const nativeChevron = select.parentNode.querySelector('.native-chevron');
+                if (nativeChevron) nativeChevron.style.display = 'none';
+            });
+            
+            if(typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Close custom dropdowns on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+                document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+            }
+        });
+
+
+        // Sidebar Toggle Logic
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        
+        const overlay = document.getElementById('sidebar-overlay');
+
+        toggleBtn.addEventListener('click', () => {
+            const isMobile = window.innerWidth < 768;
+
+            if (isMobile) {
+                sidebar.classList.toggle('-translate-x-full');
+                overlay.classList.toggle('hidden');
+            } else {
+                sidebar.classList.toggle('w-64');
+                sidebar.classList.toggle('w-20');
+
+                document.querySelectorAll('.sidebar-text')
+                    .forEach(el => el.classList.toggle('hidden'));
+            }
+        });
+
+        // Close sidebar when clicking overlay (mobile)
+        overlay.addEventListener('click', () => {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        });
+
+        // Initialize Scripts on Load
+        window.onload = () => {
+            lucide.createIcons();
+            initCustomSelects(); // Call Custom Select engine
+        };
+
+        // Auto-dismiss Toast Notifications
+        document.addEventListener("DOMContentLoaded", () => {
+            const toasts = document.querySelectorAll(".toast");
+
+            if (!toasts.length) return;
+
+            setTimeout(() => {
+                toasts.forEach(toast => {
+                    toast.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+                    toast.style.opacity = "0";
+                    toast.style.transform = "translateY(-10px)";
+                });
+
+                setTimeout(() => {
+                    document.getElementById("toast-container")?.remove();
+                }, 500);
+            }, 2000); // 2 seconds
+        });
+
+
+        const logoutModal = document.getElementById('logout-modal');
+        const modalContent = document.getElementById('modal-content');
+        const logoutLoader = document.getElementById('logout-loader');
+        const logoutForm = document.getElementById('logout-form');
+
+        window.openLogoutModal = function () {
+            logoutModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        };
+
+        window.closeLogoutModal = function () {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+            }, 300);
+        };
+
+        if (logoutForm) {
+            logoutForm.addEventListener('submit', function (e) {
+                e.preventDefault();
+
+                closeLogoutModal();
+
+                setTimeout(() => {
+                    logoutLoader.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        logoutForm.submit();
+                    }, 1500);
+                }, 300);
+            });
+        }
+    </script>
+</body>
+</html>

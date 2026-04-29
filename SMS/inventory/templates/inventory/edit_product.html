@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 
+        PAGE TITLE 
+        Dynamically injected company and product names for administrative context.
+    -->
+    <title>{{ company.name }} | Edit {{ product.name }}</title>
+
+    <!-- 
+        EXTERNAL DEPENDENCIES
+        - Tailwind CSS: For utility-first styling.
+        - Lucide Icons: For clean interface iconography.
+        - Google Fonts: Inter font family for optimal legibility.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Global Typography and Smoothing */
+        body { 
+            font-family: 'Inter', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* CUSTOM SCROLLBAR STYLING
+           Ensures the internal scrollbars match the application's slate aesthetic.
+        */
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 4px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-track { 
+            background: #f1f5f9; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 10px; 
+        }
+
+        /* Sidebar active navigation state */
+        .active-nav { 
+            background-color: #4f46e5; 
+            color: white; 
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); 
+        }
+
+        /* Toast notifications animation behavior */
+        .toast-entrance {
+            animation: slideInUp 0.3s ease-out forwards;
+        }
+
+        @keyframes slideInUp {
+            from { transform: translate(-50%, 20px); opacity: 0; }
+            to { transform: translate(-50%, 0); opacity: 1; }
+        }
+
+        /* Error Styling for Form Validation */
+        .field-error {
+            border-color: #ef4444 !important;
+            border-width: 2px !important;
+            background-color: #fef2f2 !important;
+        }
+        .error-text {
+            color: #dc2626 !important;
+            font-size: 0.75rem !important;
+            margin-top: 0.25rem !important;
+            font-weight: 600 !important;
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+    <!-- 
+        NOTIFICATION SYSTEM (TOASTS)
+        Displays system messages (success/error) triggered by backend operations.
+    -->
+    {% if messages %}
+    <div class="fixed top-5 left-1/2 -translate-x-1/2 z-[100] space-y-3">
+        {% for message in messages %}
+            <div class="toast px-6 py-4 rounded-xl shadow-2xl transition-all duration-300 flex items-center gap-3
+                {% if message.tags == 'success' %}
+                    bg-green-600 text-white
+                {% elif message.tags == 'error' %}
+                    bg-red-600 text-white
+                {% else %}
+                    bg-slate-900 text-white
+                {% endif %}">
+                
+                {% if message.tags == 'success' %}
+                    <i data-lucide="check-circle" class="w-5 h-5"></i>
+                {% elif message.tags == 'error' %}
+                    <i data-lucide="alert-circle" class="w-5 h-5"></i>
+                {% endif %}
+
+                <span class="font-medium text-sm">{{ message }}</span>
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- 
+            SIDEBAR COMPONENT
+            Main navigation hub for the enterprise portal.
+        -->
+        <div id="sidebar-overlay" 
+     class="fixed inset-0 bg-black/40 z-40 hidden lg:hidden"></div>
+
+        <aside id="sidebar"
+class="w-64 bg-white border-r border-slate-200 flex flex-col
+       fixed lg:static top-0 left-0 h-full z-50
+       transform transition-all duration-300 ease-in-out
+       -translate-x-full lg:translate-x-0">
+            <!-- Company Branding Section -->
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div class="overflow-hidden sidebar-text">
+                    <h1 class="font-bold text-lg leading-none truncate">{{ company.name }}</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Enterprise Portal</p>
+                </div>
+            </div>
+
+            <!-- Navigation Links Wrapper -->
+                                                <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+            <!-- Bottom Action: Session Logout -->
+            <div class="p-4 border-t border-slate-100">
+                <button onclick="openLogoutModal()" class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                    <i data-lucide="log-out" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- 
+            MAIN WORKSPACE AREA
+            Houses the header, breadcrumbs, and the scrollable form container.
+        -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            
+            <!-- Contextual Header -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 shrink-0">
+                <div class="flex items-center gap-3 min-w-0">
+                    <!-- Collapse Button for Sidebar -->
+                    <button id="toggle-sidebar" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+                    
+                    <!-- Hierarchical Breadcrumb Navigation -->
+                    <nav class="flex text-sm text-slate-500 gap-2 items-center overflow-hidden">
+                        <a href="{% url 'company_dashboard' %}" class="hidden sm:inline hover:text-indigo-600 transition-colors shrink-0">Dashboard</a>
+                        <i data-lucide="chevron-right" class="hidden sm:inline w-4 h-4 text-slate-300 shrink-0"></i>
+                        <a href="{% url 'product_list' %}" class="hover:text-indigo-600 transition-colors shrink-0">Inventory</a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+                        <span class="font-semibold text-slate-800 truncate">Edit Product</span>
+                    </nav>
+                </div>
+
+                <!-- User Profile Identity Block -->
+                <div class="flex items-center gap-4 shrink-0">
+                    <div class="flex flex-col items-end hidden md:block">
+                        <p class="text-xs font-bold text-slate-900">{{ request.user.username }}</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Inventory Manager</p>
+                    </div>
+                    <div class="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm text-sm sm:text-base">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- 
+                SCROLLABLE CONTENT PANEL
+                Contains the product editing form.
+            -->
+            <div class="flex-1 overflow-y-auto p-6 sm:p-8 custom-scrollbar">
+                
+                <div class="max-w-4xl mx-auto space-y-6">
+                    
+                    <!-- Headline Section -->
+                    <div class="flex items-center justify-between">
+                        <div class="space-y-1">
+                            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Update Product Details</h2>
+                            <p class="text-slate-500 text-sm italic">
+                                Modifying entry for <span class="text-indigo-600 font-bold font-sans">{{ product.name }}</span>.
+                            </p>
+                        </div>
+                        <a href="{% url 'product_list' %}" class="text-sm font-bold text-slate-500 hover:text-indigo-600 flex items-center gap-1.5 transition-all">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i> Return to Inventory
+                        </a>
+                    </div>
+
+                    <!-- 
+                        PRIMARY DATA ENTRY FORM 
+                        Modified specifically to handle restricted stock editing.
+                    -->
+                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                        <form method="post" id="productForm" novalidate>
+                            {% csrf_token %}
+                            
+                            <!-- Form Section Body -->
+                            <div class="p-8 space-y-8">
+                                
+                                <!-- SECTION 1: CORE PRODUCT ATTRIBUTES -->
+                                <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                            <i data-lucide="info" class="w-4 h-4 text-indigo-500"></i>
+                                            Basic Information
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">System-wide identifiers and categorization tags.</p>
+                                    </div>
+                                    <div class="md:col-span-2 space-y-5">
+                                        <!-- Name Field -->
+                                        <div>
+                                            <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Product Name <span class="text-red-500">*</span></label>
+                                            <input type="text" name="name" value="{{ product.name }}" maxlength="50" required
+                                                   class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all">
+                                        </div>
+                                        
+                                        <!-- SKU and Category Row -->
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                           <div>
+    <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">
+        SKU Identification <span class="text-red-500">*</span>
+    </label>
+
+    <input type="text" id="sku" name="sku" value="{{ product.sku }}" required
+           maxlength="20"
+           class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all">
+
+    <p id="sku-error" class="text-red-500 text-xs mt-1"></p>
+</div>
+                                            <div>
+                                                <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Product Category <span class="text-red-500">*</span></label>
+                                                <div class="relative">
+                                                    <div class="relative" id="categoryContainer">
+
+    <!-- Hidden input -->
+    <input type="hidden" name="category" id="categoryInput" value="{{ product.category.id }}">
+
+    <!-- Button -->
+    <button type="button" id="categoryBtn"
+        class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl 
+               flex items-center justify-between text-left focus:ring-2 
+               focus:ring-indigo-500 transition-all overflow-hidden">
+
+        <span id="categorySelected"
+              class="truncate block max-w-[85%] text-slate-800">
+            {{ product.category.name }}
+        </span>
+
+        <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 shrink-0"></i>
+    </button>
+
+    <!-- Dropdown -->
+    <div id="categoryMenu"
+         class="absolute z-50 mt-2 w-full bg-white border border-slate-200 
+                rounded-xl shadow-xl hidden max-h-56 overflow-y-auto custom-scrollbar">
+
+        {% for c in categories %}
+        <div class="px-4 py-2.5 text-sm cursor-pointer hover:bg-indigo-50 hover:text-indigo-600"
+             data-value="{{ c.id }}">
+            {{ c.name }}
+        </div>
+        {% endfor %}
+
+    </div>
+</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <hr class="border-slate-100">
+
+                                <!-- SECTION 2: FINANCIALS & STOCK LEVELS (CRITICAL SECTION) -->
+                                <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                            <i data-lucide="package" class="w-4 h-4 text-indigo-500"></i>
+                                            Pricing & Inventory
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Update unit economics and check real-time stock availability.</p>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <!-- Cost Price -->
+                                            <div>
+                                                <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Cost Price <span class="text-red-500">*</span></label>
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                                    <input type="number" step="0.01" min="0.01" max="99999999.99" name="purchase_price" value="{{ product.purchase_price }}" required
+                                                           oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);"
+                                                           class="w-full pl-7 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all">
+                                                </div>
+                                            </div>
+
+                                            <!-- Selling Price -->
+                                            <div>
+                                                <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Sales Price <span class="text-red-500">*</span></label>
+                                                <div class="relative">
+                                                    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm font-bold">₹</span>
+                                                    <input type="number" step="0.01" min="0.01" max="99999999.99" name="selling_price" value="{{ product.selling_price }}" required
+                                                           oninput="if(this.value.length > 8) this.value = this.value.slice(0, 8);"
+                                                           class="w-full pl-7 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white focus:outline-none transition-all">
+                                                </div>
+                                            </div>
+
+                                            <!-- DISABLED STOCK FIELD (REQUESTED MODIFICATION) -->
+                                            <div class="relative">
+                                                <label class="block text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 px-1">Current Stock</label>
+                                                <div class="relative group">
+                                                    <input type="number" name="stock_quantity" value="{{ product.stock_quantity }}"
+                                                           readonly tabindex="-1"
+                                                           title="Stock updates must be performed via Adjust Stock module"
+                                                           class="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed focus:outline-none transition-all font-bold">
+                                                    <div class="absolute right-3 top-1/2 -translate-y-1/2">
+                                                        <i data-lucide="lock" class="w-3.5 h-3.5 text-slate-400"></i>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- REQUESTED RED WARNING MESSAGE -->
+                                                <p class="mt-2 text-[10px] font-bold text-red-600 leading-tight">
+                                                    cannot edit stock manually go to adjust stock to edit stock like this
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <hr class="border-slate-100">
+
+                                <!-- SECTION 3: ADVANCED MODULES -->
+                                <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div class="md:col-span-1">
+                                        <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                            <i data-lucide="shield-check" class="w-4 h-4 text-indigo-500"></i>
+                                            Compliance & Tracking
+                                        </h3>
+                                        <p class="text-xs text-slate-500 mt-1 leading-relaxed">Manage specific tracking rules for quality assurance.</p>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <label class="flex items-start cursor-pointer group p-4 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-200 hover:bg-white transition-all">
+                                            <div class="flex items-center h-5 mt-1">
+                                                <input type="checkbox" name="is_expiry_tracked" 
+                                                       {% if product.is_expiry_tracked %}checked{% endif %}
+                                                       class="h-5 w-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                                            </div>
+                                            <div class="ml-4 text-sm">
+                                                <span class="font-bold text-slate-700 group-hover:text-indigo-600 transition-colors">Enable Expiry Tracking</span>
+                                                <p class="text-slate-500 text-[11px] mt-0.5 leading-relaxed">
+                                                    When enabled, the system enforces mandatory batch numbers and expiration date logs for all incoming stock shipments.
+                                                </p>
+                                            </div>
+                                        </label>
+                                    </div>
+                                </section>
+
+                            </div>
+
+                            <!-- BOTTOM NAVIGATION BAR (STICKY STYLE) -->
+                            <div class="p-6 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-3">
+                                
+                                <!-- Cancellation Link -->
+                                <a href="{% url 'product_list' %}" 
+                                   class="order-2 sm:order-1 w-full sm:w-auto text-center px-10 py-3 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-100 hover:shadow-sm transition-all whitespace-nowrap">
+                                    Discard Changes
+                                </a>
+
+                                <!-- Submit Update Action -->
+                                <button type="submit" class="order-1 sm:order-2 w-full sm:w-auto px-10 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg shadow-indigo-100 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 whitespace-nowrap">
+                                    <i data-lucide="refresh-cw" class="w-4 h-4 shrink-0"></i>
+                                    Update Product
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Informational Warning Banner -->
+                    <div class="bg-indigo-50 border border-indigo-100 rounded-2xl p-5 flex gap-4">
+                        <i data-lucide="lightbulb" class="w-6 h-6 text-indigo-500 shrink-0"></i>
+                        <p class="text-xs text-indigo-900 leading-relaxed font-medium">
+                            <span class="font-bold block mb-1">Administrative Note:</span>
+                            All changes made to SKU or Product Names are tracked in the activity logs. Please ensure accuracy to maintain consistent reporting across your inventory modules.
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+
+        <!-- 
+            CUSTOM LOGOUT MODAL 
+            Replaces browser default alerts for a cohesive brand experience.
+        -->
+        <div id="logout-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm hidden flex items-center justify-center z-[200]">
+            <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-200">
+                
+                <div class="w-16 h-16 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <i data-lucide="log-out" class="w-8 h-8"></i>
+                </div>
+
+                <h2 class="text-2xl font-bold text-slate-900 tracking-tight">Are you sure?</h2>
+                <p class="text-slate-500 mt-3 mb-8 text-sm leading-relaxed font-medium">
+                    Signing out will end your current session. Make sure all your progress is saved.
+                </p>
+
+                <div class="space-y-3">
+                    <form action="{% url 'company_logout' %}" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 hover:shadow-lg transition-all">
+                            Yes, Log me out
+                        </button>
+                    </form>
+
+                    <button onclick="closeLogoutModal()" class="w-full py-3.5 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-all">
+                        No, stay here
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 
+        INTERACTIVITY SCRIPTS
+        Manages UI state, responsiveness, and component initialization.
+    -->
+  <script>
+/**
+ * Sidebar Toggle Interaction Logic (UPGRADED)
+ * - Desktop: keeps your original collapse behavior
+ * - Mobile: adds slide-in / slide-out behavior
+ */
+const sidebar = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('toggle-sidebar');
+
+
+let overlay = document.getElementById('sidebar-overlay');
+if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'sidebar-overlay';
+    overlay.className = 'fixed inset-0 bg-black/40 z-40 hidden lg:hidden';
+    document.body.appendChild(overlay);
+}
+
+toggleBtn.addEventListener('click', () => {
+    const isMobile = window.innerWidth < 1024;
+
+    if (isMobile) {
+       
+        const isClosed = sidebar.classList.contains('-translate-x-full');
+
+        if (isClosed) {
+            // OPEN
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+        } else {
+            // CLOSE
+            sidebar.classList.add('-translate-x-full');
+            sidebar.classList.remove('translate-x-0');
+            overlay.classList.add('hidden');
+        }
+
+    } else {
+        
+        sidebar.classList.toggle('w-64');
+        sidebar.classList.toggle('w-20');
+
+        const textElements = document.querySelectorAll('.sidebar-text');
+        textElements.forEach(el => {
+            el.classList.toggle('hidden');
+        });
+    }
+});
+
+/**
+ * CLOSE SIDEBAR WHEN CLICKING OUTSIDE (MOBILE)
+ */
+overlay.onclick = () => {
+    sidebar.classList.add('-translate-x-full');
+    sidebar.classList.remove('translate-x-0');
+    overlay.classList.add('hidden');
+};
+
+/**
+ * Global Initialization
+ */
+window.onload = () => {
+    // Icons
+    lucide.createIcons();
+
+    // Toasts
+    const toasts = document.querySelectorAll(".toast");
+    if (toasts.length > 0) {
+        toasts.forEach((toast, i) => {
+            toast.classList.add("toast-entrance");
+
+            setTimeout(() => {
+                toast.classList.add("opacity-0", "translate-y-[-10px]");
+                setTimeout(() => toast.remove(), 300);
+            }, 4000 + (i * 200));
+        });
+    }
+};
+
+/**
+ * Modal Logic
+ */
+function openLogoutModal() {
+    const modal = document.getElementById("logout-modal");
+    modal.classList.remove("hidden");
+    modal.classList.add("flex");
+}
+
+function closeLogoutModal() {
+    const modal = document.getElementById("logout-modal");
+    modal.classList.add("hidden");
+    modal.classList.remove("flex");
+}
+
+/**
+ * Responsive Behavior (UPGRADED)
+ */
+function handleMobileResize() {
+    if (window.innerWidth < 1024) {
+        
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+    } else {
+        
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+
+    if (window.innerWidth >= 1024) {
+        // desktop collapse allowed
+        if (sidebar.classList.contains('w-64') || sidebar.classList.contains('w-20')) {
+            // keep your existing behavior
+        }
+    } else {
+       
+        sidebar.classList.remove('w-20');
+        sidebar.classList.add('w-64');
+
+        document.querySelectorAll('.sidebar-text')
+            .forEach(el => el.classList.remove('hidden'));
+    }
+}
+
+window.addEventListener('resize', handleMobileResize);
+handleMobileResize(); // run on load
+</script>
+<script>
+const categoryBtn = document.getElementById('categoryBtn');
+const categoryMenu = document.getElementById('categoryMenu');
+const categorySelected = document.getElementById('categorySelected');
+const categoryInput = document.getElementById('categoryInput');
+
+// toggle
+categoryBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    categoryMenu.classList.toggle('hidden');
+});
+
+// select
+categoryMenu.querySelectorAll('[data-value]').forEach(option => {
+    option.addEventListener('click', () => {
+        categorySelected.textContent = option.textContent.trim();
+        categoryInput.value = option.dataset.value;
+        categoryMenu.classList.add('hidden');
+
+        // Validation Clearance for custom dropdown
+        categoryBtn.classList.remove('field-error');
+        const existingError = categoryBtn.parentElement.querySelector('.error-text');
+        if (existingError) existingError.remove();
+    });
+});
+
+// close outside
+document.addEventListener('click', (e) => {
+    if (!categoryBtn.contains(e.target) && !categoryMenu.contains(e.target)) {
+        categoryMenu.classList.add('hidden');
+    }
+});
+
+const skuInput = document.getElementById("sku");
+const skuError = document.getElementById("sku-error");
+
+skuInput.addEventListener("input", function () {
+    const value = skuInput.value;
+
+    const regex = /^[A-Za-z0-9]*$/;
+
+    if (!regex.test(value)) {
+        skuError.textContent = " letters and numbers allowed ";
+        skuInput.value = value.replace(/[^A-Za-z0-9]/g, '');
+    } 
+    else if (value.length > 20) {
+        skuError.textContent = "SKU 20 characters ";
+    } 
+    else {
+        skuError.textContent = "";
+    }
+});
+
+// -------------------------------------------------------------
+// FORM VALIDATION SCRIPT (MATCHING "ADD PRODUCT")
+// -------------------------------------------------------------
+
+function clearErrors() {
+    document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+    categoryBtn.classList.remove('field-error');
+    document.querySelectorAll('.error-text').forEach(el => el.remove());
+}
+
+function showFieldError(fieldName, message) {
+    if (fieldName === 'category') {
+        categoryBtn.classList.add('field-error');
+        const error = document.createElement('p');
+        error.className = 'error-text';
+        error.textContent = message;
+        categoryBtn.parentElement.appendChild(error);
+        return;
+    }
+
+    const field = document.querySelector(`[name="${fieldName}"]`);
+    if (field) {
+        field.classList.add('field-error');
+        const error = document.createElement('p');
+        error.className = 'error-text';
+        error.textContent = message;
+        field.parentNode.appendChild(error);
+    }
+}
+
+document.getElementById('productForm').addEventListener('submit', function(e) {
+    clearErrors();
+    let valid = true;
+
+    // 1. Name Check
+    const name = this.name.value.trim();
+    if (!name) {
+        showFieldError('name', 'Product name is required');
+        valid = false;
+    } else if (name.length > 50) {
+        showFieldError('name', 'Name must be under 50 characters');
+        valid = false;
+    }
+
+    // 2. SKU Check
+    const skuVal = this.sku.value.trim();
+    const skuValidPattern = /^[A-Za-z0-9\-_]{1,20}$/;
+    if (!skuVal) {
+        showFieldError('sku', 'SKU code is required');
+        valid = false;
+    } else if (!skuValidPattern.test(skuVal)) {
+        showFieldError('sku', 'SKU must be 1–20 characters: letters, numbers, hyphen, or underscore only');
+        valid = false;
+    }
+
+    // 3. Category Check
+    if (!categoryInput.value) {
+        showFieldError('category', 'Please select a product category');
+        valid = false;
+    }
+
+    // 4. Price Validation (Updated with limits)
+    const purchaseStr = this.purchase_price.value.trim();
+    const sellingStr = this.selling_price.value.trim();
+    const purchase = parseFloat(purchaseStr);
+    const selling = parseFloat(sellingStr);
+    const MAX_PRICE = 99999999.99; // According to max_digits=10, decimal_places=2
+
+    // Purchase Price Validation
+    if (!purchaseStr) {
+        showFieldError('purchase_price', 'Cost price is required');
+        valid = false;
+    } else if (purchaseStr.length > 8) {
+        showFieldError('purchase_price', 'More than 8 digits/characters is not allowed');
+        valid = false;
+    } else if (isNaN(purchase) || purchase <= 0) {
+        showFieldError('purchase_price', 'Invalid cost price');
+        valid = false;
+    } else if (purchase > MAX_PRICE) {
+        showFieldError('purchase_price', 'Cost price cannot exceed ₹99,999,999.99');
+        valid = false;
+    }
+    
+    // Selling Price Validation
+    if (!sellingStr) {
+        showFieldError('selling_price', 'Sales price is required');
+        valid = false;
+    } else if (sellingStr.length > 8) {
+        showFieldError('selling_price', 'More than 8 digits/characters is not allowed');
+        valid = false;
+    } else if (isNaN(selling) || selling <= 0) {
+        showFieldError('selling_price', 'Invalid sales price');
+        valid = false;
+    } else if (selling > MAX_PRICE) {
+        showFieldError('selling_price', 'Sales price cannot exceed ₹99,999,999.99');
+        valid = false;
+    }
+    
+    // Only compare if both are valid numbers and under max limits
+    if (!isNaN(selling) && !isNaN(purchase) && sellingStr.length <= 8 && purchaseStr.length <= 8 && selling <= purchase && selling <= MAX_PRICE && purchase <= MAX_PRICE) {
+        showFieldError('selling_price', 'Price must be higher than cost (₹' + purchase + ')');
+        valid = false;
+    }
+
+    if (!valid) {
+        e.preventDefault();
+        const firstError = document.querySelector('.field-error');
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+});
+
+// Clear errors globally on input
+document.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", function () {
+        this.classList.remove("field-error", "border-red-500");
+        this.classList.add("border-slate-200");
+
+        // remove error message below field (excluding your custom sku-error element)
+        const error = this.parentNode.querySelector(".error-text");
+        if (error && error.id !== "sku-error") {
+            error.remove();
+        }
+    });
+});
+</script>
+</body>
+</html>

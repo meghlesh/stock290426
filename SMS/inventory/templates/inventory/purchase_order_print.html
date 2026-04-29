@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Purchase Order {{ order.order_number }}</title>
+
+<style>
+:root{
+    --primary:#2f855a;
+    --primary-dark:#276749;
+    --text-dark:#1f2937;
+    --text-light:#4b5563;
+    --border:#d1d5db;
+}
+
+@page{ size:A4; margin:20mm; }
+
+body{
+    font-family: Arial, Helvetica, sans-serif;
+    margin:0;
+    padding:30px 0;
+    background:#f8fafc;
+}
+
+/* ==== WRAPPER ==== */
+.po-wrapper{
+    width:794px;
+    margin:auto;
+    padding:28px;
+    border-radius:10px;
+    background:#ffffff;
+    position:relative;
+}
+
+/* ==== HEADER ==== */
+.header{
+    border-bottom:3px solid var(--primary);
+    padding-bottom:16px;
+    margin-bottom:24px;
+}
+.po-left h1{
+    font-size:28px;
+    margin:0;
+    color:var(--primary);
+}
+.po-left p{
+    font-size:12px;
+    margin:4px 0;
+    color:var(--text-light);
+}
+.company h2{
+    font-size:18px;
+    margin:8px 0 0;
+    color:var(--primary-dark);
+}
+.company p{
+    font-size:12px;
+    color:var(--text-light);
+}
+
+/* ==== INFO ==== */
+.info-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:30px;
+    margin:26px 0;
+}
+.info-box strong{
+    color:var(--primary);
+    font-size:14px;
+}
+.info-box p{
+    margin:4px 0;
+    font-size:13px;
+    color:var(--text-light);
+}
+
+/* ==== TABLE ==== */
+table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+}
+thead th{
+    background:var(--primary);
+    color:#fff;
+    padding:10px;
+    border:1px solid var(--primary);
+}
+tbody td{
+    border:1px solid var(--border);
+    padding:8px;
+    text-align:center;
+}
+tbody td:nth-child(2){ text-align:left; }
+tbody tr:nth-child(even){ background:#f0fdf4; }
+
+/* ==== TOTAL ==== */
+.totals{
+    display:flex;
+    justify-content:flex-end;
+    margin-top:20px;
+}
+.totals table{
+    width:40%;
+}
+.totals td{
+    border:1px solid var(--border);
+    padding:8px;
+}
+.totals tr:last-child td{
+    font-weight:bold;
+    color:var(--primary);
+    background:#ecfdf5;
+}
+
+/* ==== FOOTER ==== */
+.footer{
+    margin-top:60px;
+    border-top:1px dashed var(--border);
+    padding-top:12px;
+    display:flex;
+    justify-content:space-between;
+    font-size:11px;
+    color:#6b7280;
+}
+
+/* ==== THANK YOU ==== */
+.thank-you{
+    text-align:center;
+    margin-top:12px;
+    font-size:16px;
+    color:var(--primary);
+}
+
+/* ==== QR CODE ==== */
+.qr-box{
+    position:absolute;
+    top:20px;
+    right:20px;
+    text-align:center;
+}
+.qr-box img{
+    width:90px;
+    height:90px;
+}
+.qr-box p{
+    font-size:10px;
+    margin-bottom:4px;
+}
+
+/* ==== CORNER SCANNER ==== */
+.corner-scanner{
+    position:fixed;
+    bottom:20px;
+    right:20px;
+    width:160px;
+    height:160px;
+    border:2px solid var(--primary);
+    border-radius:12px;
+    overflow:hidden;
+    background:#000;
+    z-index:999;
+}
+
+/* ==== PRINT ==== */
+@media print{
+    body{
+        background:#fff;
+        margin:0;
+        padding:0;
+    }
+    .po-wrapper{
+        width:100%;
+        padding:0;
+        margin:0;
+        border-radius:0;
+    }
+    .qr-box,
+    .corner-scanner{
+        display:none !important;
+    }
+}
+/* ===== SCAN RESULT LINK ===== */
+.scan-link-box{
+    margin-top:20px;
+    padding:12px;
+    border:1px dashed var(--primary);
+    border-radius:8px;
+    background:#f0fdf4;
+    font-size:13px;
+}
+
+.scan-link-box p{
+    margin:0 0 6px;
+    color:var(--primary-dark);
+    font-weight:600;
+}
+
+.scan-link-box a{
+    word-break:break-all;
+    color:#2563eb;
+    text-decoration:underline;
+}
+
+/* Hide in print */
+@media print{
+    .scan-link-box{
+        display:none !important;
+    }
+}
+
+</style>
+</head>
+
+<body onload="window.print()">
+
+<div class="po-wrapper">
+
+    <!-- QR CODE -->
+    <div class="qr-box">
+        <p>Scan to Print</p>
+        <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+    </div>
+    <div class="scan-link-box" id="scanLinkBox" style="display:none;">
+    <p>Scanned Print Link:</p>
+    <a href="#" id="scanLink" target="_blank"></a>
+</div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <div class="po-left">
+            <h1>PURCHASE ORDER</h1>
+            <p><strong>PO No:</strong> {{ order.order_number }}</p>
+            <p><strong>Date:</strong> {{ order.created_at|date:"d M Y" }}</p>
+        </div>
+        <div class="company">
+            <h2>{{ order.company.name }}</h2>
+            <p>{{ order.company.address }}</p>
+        </div>
+    </div>
+
+    <!-- INFO -->
+    <div class="info-grid">
+        <div class="info-box">
+            <strong>Vendor Details</strong>
+            <p>{{ order.vendor.company_name }}</p>
+            <p>{{ order.vendor.email }}</p>
+            <p>{{ order.vendor.phone }}</p>
+        </div>
+        <div class="info-box">
+            <strong>Order Info</strong>
+            <p>Status: {{ order.status }}</p>
+            <p>Expected Date: {{ order.expected_date|default:"—" }}</p>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Product</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in order.items.all %}
+            <tr>
+                <td>{{ forloop.counter }}</td>
+                <td>{{ item.product.name }}</td>
+                <td>{{ item.quantity }}</td>
+                <td>{{ item.unit_price }}</td>
+                <td>{{ item.total_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALS -->
+    <div class="totals">
+        <table>
+            <tr><td>Subtotal</td><td>{{ order.subtotal }}</td></tr>
+            <tr><td>Tax</td><td>{{ order.tax_amount }}</td></tr>
+            <tr><td>Grand Total</td><td>{{ order.total_amount }}</td></tr>
+        </table>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer">
+        <span>Generated by Stock Management System</span>
+        <span>Authorized Signature __________________</span>
+    </div>
+
+    <div class="thank-you">
+        ✔ Thank You For Your Business
+    </div>
+
+</div>
+
+<!-- SCANNER -->
+<!-- <div class="corner-scanner">
+    <div id="qr-reader"></div>
+</div> -->
+
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<!-- <script>
+const html5QrCode = new Html5Qrcode("qr-reader");
+
+function onScanSuccess(decodedText) {
+    html5QrCode.stop().then(() => {
+        window.open(decodedText, "_blank");
+    });
+}
+
+html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 120 },
+    onScanSuccess
+);
+</script> -->
+<script>
+const html5QrCode = new Html5Qrcode("qr-reader");
+
+function onScanSuccess(decodedText) {
+
+    // Stop scanner
+    html5QrCode.stop();
+
+    // Show link box
+    const box = document.getElementById("scanLinkBox");
+    const link = document.getElementById("scanLink");
+
+    link.href = decodedText;
+    link.textContent = decodedText;
+
+    box.style.display = "block";
+}
+
+html5QrCode.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 120 },
+    onScanSuccess
+);
+</script>
+
+</body>
+</html>

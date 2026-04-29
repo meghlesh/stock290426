@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="ms-password-auto-show" content="false">
+    <title>Owner Login | Business Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.6s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+
+        input::-ms-reveal {
+    display: none;
+}
+
+
+    </style>
+</head>
+<body class="flex items-center justify-center p-6">
+
+    <!-- Django Messages (Moved to Fixed Position) -->
+    <!-- {% if messages %}
+    <div id="django-messages-container" class="space-y-3">
+        {% for message in messages %}
+        <div class="message-item p-4 rounded-2xl text-sm flex items-center gap-3 border animate-fade-in
+            {% if message.tags == 'error' %}
+                bg-white text-red-700 border-red-100
+            {% else %}
+                bg-white text-green-700 border-green-100
+            {% endif %}">
+            <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center
+                {% if message.tags == 'error' %} bg-red-50 {% else %} bg-green-50 {% endif %}">
+                <i class="fas {% if message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"></i>
+            </div>
+            <span class="font-medium">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %} -->
+
+    <div class="w-full max-w-md animate-fade-in">
+        <!-- Branding -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-4 shadow-xl">
+                <i class="fas fa-briefcase text-indigo-600 text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white tracking-tight">Business Login</h1>
+            <p class="text-indigo-100 mt-2 opacity-90">Manage your company resources</p>
+        </div>
+
+        <!-- 20-4-26 Login Card -->
+        <div class="glass-card rounded-3xl p-8 md:p-10 space-y-4">
+
+    {% if messages %}
+    <div class="space-y-3">
+        {% for message in messages %}
+        <div class="message-item p-3 rounded-xl text-sm flex items-center gap-3 border
+            {% if message.tags == 'error' %}
+                bg-red-50 text-red-700 border-red-100
+            {% else %}
+                bg-green-50 text-green-700 border-green-100
+            {% endif %}">
+            
+            <div class="w-7 h-7 flex items-center justify-center rounded-full
+                {% if message.tags == 'error' %} bg-red-100 {% else %} bg-green-100 {% endif %}">
+                <i class="fas {% if message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"></i>
+            </div>
+
+            <span class="font-medium">{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+            
+            <form method="post" class="space-y-6" onsubmit="return validateLoginForm()">
+                {% csrf_token %}
+                
+                <!-- Username -->
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-gray-700">Username</label>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                            <i class="fas fa-user-tie"></i>
+                        </div>
+                        <input 
+                            type="text" 
+                            name="username"
+                            id="username"
+                            maxlength="30"
+                            required
+                            oninput="validateUsername(this)"
+                            class="block w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                                   text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2
+                                   focus:ring-indigo-500 focus:bg-white transition-all"
+                            placeholder="Enter your username"
+                        />
+                        <p id="username_error" class="text-red-600 text-sm mt-1 hidden"></p>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                        <label class="block text-sm font-semibold text-gray-700">Password</label>
+                        <!-- <a href="{% url 'forgot_password' %}" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 transition-colors">Recover?</a> -->
+                    </div>
+                    <div class="relative group">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400 group-focus-within:text-indigo-600 transition-colors">
+                            <i class="fas fa-key"></i>
+                        </div>
+                        <input 
+                            type="password" 
+                            name="password"
+                            id="ownerPass"
+                            maxlength="20"
+                            required
+                            class="block w-full pl-11 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl
+                                   text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2
+                                   focus:ring-indigo-500 focus:bg-white transition-all"
+                            placeholder="••••••••"
+                        />
+                        <!-- Eye Toggle Button -->
+                        <button type="button" onclick="togglePass()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-indigo-600 z-10">
+                            <i class="far fa-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Login Options -->
+                <div class="flex items-center justify-between text-sm">
+                    <label class="flex items-center cursor-pointer text-gray-600">
+                        <input type="checkbox" name="remember_me" class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                        <span class="ml-2">Remember me</span>
+                    </label>
+                </div>
+
+                <!-- Submit -->
+                <button 
+                    type="submit" 
+                    class="w-full py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:shadow-indigo-300 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+                >
+                    Sign In to Portal <i class="fas fa-arrow-right text-xs"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Links -->
+        <div class="mt-8 flex flex-col items-center gap-4">
+            <a href="{% url 'index' %}" class="text-white/80 hover:text-white text-sm font-medium transition-colors">
+                <i class="fas fa-house mr-1"></i> Return to Homepage
+            </a>
+            <p class="text-indigo-100/60 text-xs">
+                &copy; 2026 Enterprise Solutions. All rights reserved.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Fixed Eye Toggle Function
+        function togglePass() {
+            const input = document.getElementById('ownerPass');
+            const icon = document.getElementById('toggleIcon');
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        // Simple Username Validation (No spaces)
+        function validateUsername(input) {
+            const error = document.getElementById("username_error");
+
+            if (/\s/.test(input.value)) {
+                input.value = input.value.replace(/\s/g, "");
+                error.textContent = "Username cannot contain spaces.";
+                error.classList.remove("hidden");
+                input.classList.add("border-red-500");
+                return false;
+            }
+
+            error.classList.add("hidden");
+            input.classList.remove("border-red-500");
+            return true;
+        }
+
+        // Form Submission Validation
+        function validateLoginForm() {
+            const username = document.getElementById("username");
+            return validateUsername(username);
+        }
+
+        // 20-4-26 Message Auto-hide with smooth fade and slide
+        document.addEventListener("DOMContentLoaded", function () {
+    const messages = document.querySelectorAll(".message-item");
+
+    if (messages.length > 0) {
+        setTimeout(() => {
+            messages.forEach(msg => {
+                msg.style.transition = "all 0.4s ease";
+                msg.style.opacity = "0";
+                msg.style.transform = "translateY(-10px)";
+            });
+
+            setTimeout(() => {
+                messages.forEach(msg => msg.remove());
+            }, 400);
+
+        }, 2000); // 2 seconds
+    }
+});
+    </script>
+
+</body>
+</html>

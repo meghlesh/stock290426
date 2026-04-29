@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Team Members</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900">
+
+<div class="max-w-7xl mx-auto px-6 py-10">
+
+                {% if messages %}
+    {% for message in messages %}
+        <div class="mb-4 px-4 py-3 rounded-xl text-sm font-semibold
+            {% if message.tags == 'success' %}
+                bg-emerald-50 border border-emerald-200 text-emerald-700
+            {% elif message.tags == 'error' %}
+                bg-rose-50 border border-rose-200 text-rose-700
+            {% endif %}
+            flex items-center gap-2"
+            id="auto-dismiss-alert">
+
+            <i data-lucide="check-circle" class="w-4 h-4"></i>
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold tracking-tight">Team Members</h1>
+            <p class="text-sm text-slate-500 mt-1">
+                Manage and view all staff members
+            </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <a href="{% url 'add_staff' %}"
+               class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-semibold flex items-center gap-2">
+                <i data-lucide="user-plus" class="w-4 h-4"></i>
+                Add Member
+            </a>
+
+            <a href="{% url 'company_dashboard' %}"
+               class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-sm font-semibold flex items-center gap-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 text-slate-500 text-xs font-bold uppercase">
+                    <tr>
+                        <th class="px-6 py-4">Name</th>
+                        <th class="px-6 py-4">Email</th>
+                        <th class="px-6 py-4 text-center">Status</th>
+                    </tr>
+                </thead>
+
+                <tbody class="divide-y divide-slate-100">
+
+                    {% for staff in staff_members %}
+                    <tr class="hover:bg-slate-50 transition-colors">
+                        <td class="px-6 py-4 font-semibold text-slate-800 text-sm">
+                            {{ staff.name }}
+                        </td>
+
+                        <td class="px-6 py-4 text-sm text-slate-600">
+                            {{ staff.email }}
+                        </td>
+
+                        <td class="px-6 py-4 text-center">
+                            <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase">
+                                Active
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="3" class="px-6 py-10 text-center text-slate-500">
+                            No staff members found.
+                        </td>
+                    </tr>
+                    {% endfor %}
+
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    lucide.createIcons();
+</script>
+<!-- 11-2-26 -->
+<script>
+const alert = document.getElementById("auto-dismiss-alert");
+if (alert) {
+    setTimeout(() => {
+        alert.classList.add("opacity-0", "transition-opacity", "duration-500");
+        setTimeout(() => alert.remove(), 500);
+    }, 3000);
+}
+</script>
+<!-- 11-2-26 -->
+</body>
+</html>

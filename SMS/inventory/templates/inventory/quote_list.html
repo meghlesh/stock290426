@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quotes</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100">
+
+<div class="max-w-6xl mx-auto mt-6 bg-white shadow rounded-md p-6">
+
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-4">
+        <h1 class="text-xl font-semibold">Quotes</h1>
+        <a href="{% url 'inventory:quote_create' %}"
+           class="bg-blue-600 text-white px-4 py-2 rounded text-sm">
+            + New Quote
+        </a>
+    </div>
+
+    <!-- Table -->
+    <div class="overflow-x-auto">
+        <table class="w-full border text-sm">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th class="p-2 text-left">Quote #</th>
+                    <th class="p-2 text-left">Customer</th>
+                    <th class="p-2 text-left">Quote Date</th>
+                    <th class="p-2 text-right">Total</th>
+                    <th class="p-2 text-center">Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for quote in quotes %}
+                <tr class="border-t">
+                    <td class="p-2">{{ quote.quote_number }}</td>
+                    <td class="p-2">{{ quote.customer }}</td>
+                    <td class="p-2">{{ quote.quote_date }}</td>
+                    <td class="p-2 text-right">₹ {{ quote.total }}</td>
+                    <td class="p-2 text-center">
+                        <span class="px-2 py-1 rounded bg-gray-100 text-xs">
+                            {{ quote.status|title }}
+                        </span>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center p-4 text-gray-500">
+                        No quotes found.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+</body>
+</html>

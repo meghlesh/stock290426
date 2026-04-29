@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Add Vendor</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        
+        /* Smooth transitions for mobile sidebar */
+        #sidebar { transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        .field-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+        .error-text {
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+        .dropdown-item {
+            width: 100%;
+            text-align: left;
+            padding: 0.6rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #334155;
+        }
+        .dropdown-item:hover {
+            background-color: #eef2ff;
+            color: #4f46e5;
+        }
+        /* 26-3-26 */
+        /* --- Packing Loader Animation Styles --- */
+        .box-loader {
+            width: 80px;
+            height: 80px;
+            background: #4f46e5;
+            position: relative;
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .box-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3730a3;
+            transform: translateY(-50%);
+        }
+        .box-loader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3730a3;
+            transform: translateX(-50%);
+        }
+        @keyframes box-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-35px) rotate(8deg); }
+        }
+
+/* Smooth sidebar animation */
+#sidebar {
+    will-change: transform, width;
+}
+
+/* Mobile states */
+.mobile-closed {
+    transform: translateX(-100%);
+}
+.mobile-open {
+    transform: translateX(0);
+}
+
+/* Smooth overlay fade */
+#sidebar-overlay {
+    transition: opacity 0.3s ease-in-out;
+}
+/* 26-3-26 */
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
+
+<div class="flex h-screen overflow-hidden">
+
+    <!-- ==== SIDEBAR ==== -->
+     <!-- 26-3-26 -->
+<div id="sidebar-overlay"
+     class="fixed inset-0 bg-black/50 z-40 hidden opacity-0 
+            transition-opacity duration-300 md:hidden">
+</div>
+<aside id="sidebar"
+    class="fixed md:static top-0 left-0 h-full w-64 bg-white 
+           border-r border-slate-200 flex flex-col
+           transform -translate-x-full md:translate-x-0
+           transition-all duration-300 ease-in-out z-50">
+        <!-- 26-3-26 -->
+        
+        <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div class="overflow-hidden sidebar-text">
+                <h1 class="font-bold text-lg truncate">{{ company.name }}</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Enterprise</p>
+            </div>
+        </div>
+
+                                            <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+        <div class="p-4 border-t border-slate-100">
+           <button onclick="openLogoutModal()" 
+                class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+                <span class="sidebar-text">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- ==== MAIN ==== -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+
+        <!-- Header -->
+        <header class="min-h-16 bg-white border-b border-slate-200
+            flex items-center justify-between
+            px-4 md:px-8 shrink-0">
+
+            <div class="flex items-center gap-4">
+                <!-- 26-3-26 -->
+<button id="toggle-sidebar"
+    class="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0">
+    <i data-lucide="menu" class="w-5 h-5"></i>
+</button>
+<!-- 26-3-26 -->
+                <nav class="flex text-sm text-slate-500 gap-2 items-center flex-wrap">
+                    <a href="{% url 'company_dashboard' %}" class="hover:text-indigo-600 transition-colors">Dashboard</a>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                    <a href="{% url 'vendor_list' %}" class="hover:text-indigo-600 transition-colors">Vendors</a>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                    <span class="font-semibold text-slate-800">Add Vendor</span>
+                </nav>
+            </div>
+
+            <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                {{ request.user.username|slice:":1"|upper }}
+            </div>
+        </header>
+
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 custom-scrollbar">
+            
+            <div class="max-w-4xl mx-auto space-y-6">
+                
+                <!-- Title Section -->
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Add New Vendor</h2>
+                        <p class="text-slate-500 text-sm">Register a new supplier to manage procurement and stock sourcing.</p>
+                    </div>
+                    <a href="{% url 'vendor_list' %}" class="text-sm font-semibold text-slate-500 hover:text-indigo-600 flex items-center gap-1 transition-colors group">
+                        <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i> Back to Vendors
+                    </a>
+                </div>
+
+                <!-- Form Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden mb-10">
+                    <form method="post" id="vendorForm" novalidate>
+                        {% csrf_token %}
+
+                        <div class="p-8 space-y-8">
+
+                            <!-- ==== PRIMARY CONTACT ==== -->
+                            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">
+                                        Primary Contact <span class="text-red-500">*</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        Main point of contact for this vendor.
+                                    </p>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:col-span-2">
+
+                                    <!-- Salutation -->
+                                    <div class="relative" data-dropdown>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                                        Salutation
+                                                </label>
+                                        <input type="hidden" name="salutation" value="{{ post_data.salutation|default:'' }}">
+                                        <button type="button"
+                                            class="dropdown-btn w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
+                                                text-sm text-left flex justify-between items-center
+                                                focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                            <span class="dropdown-label">
+                                                {{ post_data.salutation|default:"Salutation" }}
+                                            </span>
+                                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                                        </button>
+                                        <div class="dropdown-menu absolute z-20 mt-2 w-full bg-white border border-slate-200
+                                                    rounded-xl shadow-lg hidden">
+                                            <button type="button" class="dropdown-item">Mr</button>
+                                            <button type="button" class="dropdown-item">Mrs</button>
+                                            <button type="button" class="dropdown-item">Ms</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- First Name -->
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                                        First Name
+                                                </label>
+                                        <input type="text"
+                                            name="first_name"
+                                            placeholder="First Name"
+                                            maxlength="20"
+                                            value="{{ post_data.first_name|default:'' }}"
+                                            oninput="this.value=this.value.replace(/[^A-Za-z]/g,'')"
+                                            class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                        {% if errors.first_name %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.first_name }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Last Name -->
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                                        Last Name
+                                                </label>
+                                        <input type="text"
+                                            name="last_name"
+                                            placeholder="Last Name"
+                                            maxlength="20"
+                                            value="{{ post_data.last_name|default:'' }}"
+                                            oninput="this.value=this.value.replace(/[^A-Za-z]/g,'')"
+                                            class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                        {% if errors.last_name %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.last_name }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            <hr class="border-slate-100">
+
+                            <!-- ==== BUSINESS IDENTITY ==== -->
+                            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">
+                                        Supplier Identity <span class="text-red-500">*</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        Company or business information.
+                                    </p>
+                                </div>
+
+                                <div class="md:col-span-2 grid md:grid-cols-2 gap-6">
+
+                                    <!-- Vendor Name -->
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                            Vendor Name
+                                        </label>
+                                        <input type="text"
+                                            maxlength="50"
+                                            name="company_name"
+                                            placeholder="e.g. Acme Corp"
+                                            value="{{ post_data.company_name|default:'' }}"
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            oninput="this.value=this.value.replace(/[^A-Za-z &.\-]/g,'')">
+                                        {% if errors.company_name %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.company_name }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- GST Number -->
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                            GST Number
+                                        </label>
+                                        <input type="text"
+                                            maxlength="15"
+                                            name="gst_number"
+                                            placeholder="22AAAAA0000A1Z5"
+                                            value="{{ post_data.gst_number|default:'' }}"
+                                            style="text-transform: uppercase;"
+                                            oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                        {% if errors.gst_number %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.gst_number }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Display Name -->
+                                    <div class="md:col-span-2">
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                            Display Name
+                                        </label>
+                                        <input type="text"
+                                            name="display_name"
+                                            maxlength="50"
+                                            placeholder="Name shown in records"
+                                            value="{{ post_data.display_name|default:'' }}"
+                                            class="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                            oninput="this.value=this.value.replace(/[^A-Za-z &.\-]/g,'')">
+                                        {% if errors.display_name %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.display_name }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                </div>
+                            </section>
+
+                            <hr class="border-slate-100">
+
+                            <!-- ==== CONTACT DETAILS ==== -->
+                            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">
+                                        Contact Details <span class="text-red-500">*</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        Communication information.
+                                    </p>
+                                </div>
+
+                                <div class="md:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4">
+
+                                    <!-- Email -->
+                                    <div>
+                                        <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+                                                        Email Address
+                                                </label>
+                                       <input type="email"
+                                            id="emailInput"
+                                            name="email"
+                                            placeholder="Email Address"
+                                            value="{{ post_data.email|default:'' }}"
+                                            class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                        {% if errors.email %}
+                                        <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.email }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <!-- Mobile -->
+                                  <div>
+    <label class="text-[10px] font-bold text-slate-800 uppercase tracking-widest block mb-1">
+        Mobile Number 
+    </label>
+
+    <div class="relative">
+        <span class="absolute left-3 top-2.5 text-slate-500 text-sm">+91</span>
+
+        <input type="text"
+            name="mobile"
+            maxlength="10"
+            placeholder="9876543210"
+            value="{{ post_data.mobile|default:'' }}"
+            oninput="this.value=this.value.replace(/[^0-9]/g,'')"
+            class="pl-12 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl w-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+    </div>
+
+    {% if errors.mobile %}
+    <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.mobile }}</p>
+    {% endif %}
+</div>
+
+                                    <!-- Language
+                                    <div class="relative" data-dropdown>
+                                        <input type="hidden" name="language" value="{{ post_data.language|default:'' }}">
+                                        <button type="button"
+                                            class="dropdown-btn w-full px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl
+                                                text-sm text-left flex justify-between items-center
+                                                focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                            <span class="dropdown-label">
+                                                {{ post_data.language|default:"Language" }}
+                                            </span>
+                                            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i>
+                                        </button>
+                                        <div class="dropdown-menu absolute z-20 mt-2 w-full bg-white border border-slate-200
+                                                    rounded-xl shadow-lg hidden">
+                                            <button type="button" class="dropdown-item">English</button>
+                                            <button type="button" class="dropdown-item">Hindi</button>
+                                            <button type="button" class="dropdown-item">Marathi</button>
+                                        </div>
+                                    </div> -->
+
+                                </div>
+                            </section>
+
+                            <hr class="border-slate-100">
+
+                            <!-- ==== ADDRESS ==== -->
+                            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                <div>
+                                    <h3 class="font-bold text-slate-800">
+                                        Address <span class="text-red-500">*</span>
+                                    </h3>
+                                    <p class="text-xs text-slate-500 mt-1">
+                                        Billing & shipping address.
+                                    </p>
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <textarea name="address"
+                                        maxlength="300"
+                                        rows="3"
+                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                        placeholder="Street, City, State, Pincode">{{ post_data.address|default:'' }}</textarea>
+                                    {% if errors.address %}
+                                    <p class="text-red-600 text-[10px] font-bold mt-1 uppercase">{{ errors.address }}</p>
+                                    {% endif %}
+                                </div>
+                            </section>
+                        </div>
+
+                        <!-- FOOTER ACTIONS -->
+                        <div class="p-6 bg-slate-50 border-t border-slate-100 flex items-center justify-end gap-3">
+                            <a href="{% url 'vendor_list' %}"
+                                class="px-6 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold text-sm hover:bg-slate-100 transition-colors">
+                                Discard
+                            </a>
+                            <button type="submit"
+                                class="px-10 py-2.5 rounded-xl bg-indigo-600 text-white font-bold text-sm shadow-lg hover:bg-indigo-700 flex items-center gap-2 active:scale-95 transition-all">
+                                Save Vendor
+                            </button>
+                        </div>
+
+                    </form>
+                </div>
+
+                <div class="text-center pb-8">
+                    <p class="text-[10px] text-slate-400 uppercase font-black tracking-widest">Enterprise Vendor Management Module</p>
+                </div>
+
+            </div>
+        </div>
+<!-- 26-3-26 -->
+        <!-- ==== LOGOUT MODAL ==== -->
+<!-- LOGOUT LOADER -->
+
+<div id="logout-loader"
+     class="fixed inset-0 z-[1000] bg-white hidden">
+    <div class="w-full h-full flex flex-col items-center justify-center">
+        <div class="box-loader"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+</div>
+
+<!-- LOGOUT MODAL -->
+<div id="logout-modal"
+     class="fixed inset-0 z-[999] bg-slate-900/40 backdrop-blur-md 
+            hidden flex items-center justify-center">
+
+    <div id="modal-content"
+         class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4
+                shadow-2xl border border-slate-100
+                transform scale-95 opacity-0 transition-all duration-300">
+
+        <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl 
+                    flex items-center justify-center mb-8 mx-auto">
+            <i data-lucide="log-out" class="w-10 h-10"></i>
+        </div>
+
+        <h3 class="text-3xl font-bold text-slate-900 text-center">
+            Ready to go?
+        </h3>
+
+        <p class="text-slate-500 mt-4 mb-10 text-center">
+            Confirm to sign out of your portal.
+        </p>
+
+        <div class="flex flex-col gap-3">
+
+            <form id="logout-form" action="{% url 'company_logout' %}" method="POST">
+                {% csrf_token %}
+                <button type="submit"
+                    class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700">
+                    Yes, Log me out
+                </button>
+            </form>
+
+            <button onclick="closeLogoutModal()"
+                class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl">
+                Stay here
+            </button>
+
+        </div>
+    </div>
+</div>
+<!-- 26-3-26 -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+
+    toggleBtn.addEventListener('click', () => {
+
+        if (window.innerWidth >= 768) {
+            // Desktop collapse
+            sidebar.classList.toggle('w-64');
+            sidebar.classList.toggle('w-20');
+
+            document.querySelectorAll('.sidebar-text')
+                .forEach(el => el.classList.toggle('hidden'));
+
+        } else {
+            // Mobile open/close
+            const isOpening = sidebar.classList.contains('-translate-x-full');
+
+            sidebar.classList.toggle('-translate-x-full');
+
+            if (isOpening) {
+                // OPEN
+                overlay.classList.remove('hidden');
+
+                setTimeout(() => {
+                    overlay.classList.remove('opacity-0');
+                    overlay.classList.add('opacity-100');
+                }, 10);
+
+                toggleBtn.classList.add('hidden');
+            } else {
+                // CLOSE
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0');
+
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                }, 300);
+
+                toggleBtn.classList.remove('hidden');
+            }
+        }
+    });
+
+    // Overlay click = close
+    overlay.addEventListener('click', () => {
+        sidebar.classList.add('-translate-x-full');
+
+        overlay.classList.remove('opacity-100');
+        overlay.classList.add('opacity-0');
+
+        setTimeout(() => {
+            overlay.classList.add('hidden');
+        }, 300);
+
+        toggleBtn.classList.remove('hidden');
+    });
+
+    // Resize fix
+    window.addEventListener('resize', () => {
+        if (window.innerWidth >= 768) {
+            overlay.classList.add('hidden');
+            overlay.classList.remove('opacity-100');
+            toggleBtn.classList.remove('hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+
+    lucide.createIcons();
+
+    // ==== FORM VALIDATION ====
+    document.getElementById('vendorForm').addEventListener('submit', function (e) {
+        clearErrors();
+        let valid = true;
+
+        const firstName = this.first_name.value.trim();
+        const lastName = this.last_name.value.trim();
+        const companyName = this.company_name.value.trim();
+        const gstNumber = this.gst_number.value.trim();
+        const displayName = this.display_name.value.trim();
+        const email = this.email.value.trim();
+        const mobile = this.mobile.value.trim();
+        const address = this.address.value.trim();
+
+        const gstRegex = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/;
+
+        if (!firstName) { showFieldError('first_name','First name required'); valid=false; }
+        if (!lastName) { showFieldError('last_name','Last name required'); valid=false; }
+        if (!companyName) { showFieldError('company_name','Vendor name required'); valid=false; }
+        
+        if (!gstNumber) {
+            showFieldError('gst_number','GST number required'); valid=false;
+        } else if (!gstRegex.test(gstNumber)) {
+            showFieldError('gst_number','Invalid GST format'); valid=false;
+        }
+
+        if (!displayName) { showFieldError('display_name','Display name required'); valid=false; }
+        if (!email || !/^\S+@\S+\.\S+$/.test(email)) { showFieldError('email','Valid email required'); valid=false; }
+        if (!/^\d{10}$/.test(mobile)) { showFieldError('mobile','Mobile must be 10 digits'); valid=false; }
+        if (!address) { showFieldError('address','Address required'); valid=false; }
+
+        if (!valid) e.preventDefault();
+    });
+
+    function showFieldError(name,msg){
+        const f=document.querySelector(`[name="${name}"]`);
+        if(!f) return;
+
+        f.classList.add('field-error');
+
+        const existing = f.parentNode.querySelector('.error-text');
+        if (existing) existing.remove();
+
+        const p=document.createElement('p');
+        p.className='error-text';
+        p.textContent=msg;
+        f.parentNode.appendChild(p);
+    }
+
+    function clearErrors(){
+        document.querySelectorAll('.field-error').forEach(e=>e.classList.remove('field-error'));
+        document.querySelectorAll('.error-text').forEach(e=>e.remove());
+    }
+
+    // ==== DROPDOWN ====
+    document.addEventListener("click", function (e) {
+        document.querySelectorAll("[data-dropdown]").forEach(drop => {
+            const btn = drop.querySelector(".dropdown-btn");
+            const menu = drop.querySelector(".dropdown-menu");
+            const label = drop.querySelector(".dropdown-label");
+            const input = drop.querySelector("input[type='hidden']");
+
+            if (btn.contains(e.target)) {
+                menu.classList.toggle("hidden");
+            } else {
+                menu.classList.add("hidden");
+            }
+
+            menu.querySelectorAll(".dropdown-item").forEach(item => {
+                item.onclick = () => {
+                    label.textContent = item.textContent;
+                    input.value = item.textContent;
+                    menu.classList.add("hidden");
+                };
+            });
+        });
+    });
+
+    const logoutModal = document.getElementById('logout-modal');
+    const modalContent = document.getElementById('modal-content');
+    const logoutLoader = document.getElementById('logout-loader');
+    const logoutForm = document.getElementById('logout-form');
+
+    // OPEN
+    window.openLogoutModal = function () {
+        if (!logoutModal) return;
+        logoutModal.classList.remove('hidden');
+        setTimeout(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+        }, 10);
+    };
+
+    // CLOSE
+    window.closeLogoutModal = function () {
+        modalContent.classList.add('scale-95', 'opacity-0');
+       setTimeout(() => {
+            logoutModal.classList.add('hidden');
+        }, 300);
+    };
+
+    // SUBMIT FLOW
+    if (logoutForm) {
+        logoutForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeLogoutModal();
+            setTimeout(() => {
+                logoutLoader.classList.remove('hidden');
+                setTimeout(() => {
+                    logoutForm.submit();
+                }, 1000);
+            }, 300);
+        });
+    }
+});
+
+document.getElementById("emailInput").addEventListener("input", function () {
+    this.value = this.value.replace(/[^a-zA-Z0-9@._]/g, '');
+});
+</script>
+<!-- 26-3-26 -->
+
+</body>
+</html>

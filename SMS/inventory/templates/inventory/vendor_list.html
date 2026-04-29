@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Vendor Management</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        /* --- Packing Loader Animation Styles --- */
+        .box-loader {
+            width: 80px;
+            height: 80px;
+            background: #4f46e5;
+            position: relative;
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .box-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3730a3;
+            transform: translateY(-50%);
+        }
+        .box-loader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3730a3;
+            transform: translateX(-50%);
+        }
+        @keyframes box-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-35px) rotate(8deg); }
+        }
+        
+        /* Mobile Sidebar Transitions */
+        @media (max-width: 639px) {
+            #sidebar.mobile-closed {
+                transform: translateX(-100%);
+            }
+            #sidebar.mobile-open {
+                transform: translateX(0);
+            }
+        }
+        
+        /* Helper for icon buttons */
+        .icon-btn {
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            color: #64748b;
+            transition: all 0.2s;
+        }
+        .icon-btn:hover {
+            background-color: #f1f5f9;
+            color: #4f46e5;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
+        <!-- PACKING LOADER OVERLAY -->
+    <div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+        <div class="box-loader"></div>
+        <div class="conveyor-belt"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logout-modal" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+        <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100" id="modal-content">
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-slate-900 text-center">Ready to go?</h3>
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">Confirm to sign out of your portal. We'll make sure your session is closed securely.</p>
+            <div class="flex flex-col gap-3">
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+                <button onclick="closeLogoutModal()" class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Mobile Overlay Backdrop -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/50 z-30 hidden transition-opacity duration-300 opacity-0 sm:hidden"></div>
+
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed sm:static z-40 w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shrink-0 h-full mobile-closed">
+        <div class="p-6 flex items-center gap-3 border-b border-slate-100 shrink-0">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white shrink-0">
+                <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div class="overflow-hidden sidebar-text">
+                <h1 class="font-bold text-lg truncate">{{ company.name }}</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enterprise</p>
+            </div>
+        </div>
+
+                                            <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+        <div class="p-4 border-t border-slate-100 shrink-0">
+                <button onclick="openLogoutModal()" class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors group">
+                    <i data-lucide="log-out" class="w-5 h-5 transition-transform group-hover:-translate-x-1"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+        </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 flex flex-col min-w-0 overflow-hidden">
+        {% if messages %}
+        <div class="absolute top-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-full max-w-sm px-4">
+            {% for message in messages %}
+            <div class="alert-message px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-semibold border transition-all duration-500
+                {% if message.tags == 'success' %} bg-emerald-100 text-emerald-700 border-emerald-300
+                {% elif message.tags == 'error' %} bg-red-100 text-red-700 border-red-300
+                {% else %} bg-slate-100 text-slate-700 border-slate-300 {% endif %}">
+                {% if message.tags == 'success' %} <i data-lucide="check-circle" class="w-4 h-4"></i>
+                {% elif message.tags == 'error' %} <i data-lucide="x-circle" class="w-4 h-4"></i> {% endif %}
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0">
+    
+    <!-- Left: Hamburger + Breadcrumb -->
+    <div class="flex items-center gap-3 min-w-0">
+        <button id="toggle-sidebar"
+            class="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <nav class="flex items-center gap-2 text-xs md:text-sm text-slate-500 whitespace-nowrap overflow-hidden">
+            <a href="{% url 'company_dashboard' %}" 
+               class="hover:text-indigo-600 shrink-0">
+                Dashboard
+            </a>
+            <i data-lucide="chevron-right" 
+               class="w-4 h-4 text-slate-300 shrink-0"></i>
+            <span class="font-semibold text-slate-800 truncate">
+                Vendors
+            </span>
+        </nav>
+    </div>
+
+    <!-- Right: User Icon -->
+    <div class="flex items-center shrink-0">
+        <div
+            class="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center
+                   text-indigo-700 font-bold border-2 border-white shadow-sm">
+            {{ request.user.username|slice:":1"|upper }}
+        </div>
+    </div>
+
+</header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-8 custom-scrollbar">
+
+            <div class="max-w-6xl mx-auto space-y-6">
+
+                <!-- Page Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div class="min-w-0">
+                        <h3 class="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">Approved Suppliers</h3>
+                        <p class="text-slate-500 text-xs sm:text-sm">Maintain supplier contacts and procurement partners.</p>
+                    </div>
+
+                        <!-- Export PDF BUTTON Same as Stock Movement 13-1-26--><!--added this div and inside this div added the export pdf button just like stock movement-->
+    <div class="flex items-center gap-3">
+
+        
+<!--added this div and inside this div added the export pdf button just like stock movement-->
+                    <a href="{% url 'add_vendor' %}"
+                       class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]">
+                        <i data-lucide="user-plus" class="w-4 h-4"></i>
+                        Add Vendor
+                    </a>
+
+                    </div>
+                </div>
+
+                <!-- Vendor Table Card -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+
+                   <div class="p-4 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-slate-50/50">
+                        <span class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                            <i data-lucide="truck" class="w-4 h-4 text-indigo-600"></i>
+                        {{ total_vendors }} Registered Vendors
+                        </span>
+<div class="flex items-center gap-2 w-full sm:w-auto">
+
+    <!-- Toggle vendor filters -->
+    <!-- <button onclick="toggleVendorFilter()"
+            class="icon-btn border border-slate-200 bg-white"
+            title="Filter vendors">
+        <i data-lucide="filter" class="w-4 h-4"></i>
+    </button> -->
+
+    <!--  FIXED: Export PDF with TEXT LABEL -->
+    <a href="{% url 'export_vendors_pdf' %}"
+       class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200
+              rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        Export PDF
+    </a>
+
+    <!--  FIXED: Export CSV with TEXT LABEL -->
+    <a href="{% url 'export_vendors_csv' %}"
+       class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200
+              rounded-lg text-xs font-bold text-slate-600 hover:bg-slate-50">
+        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+        Export CSV
+    </a>
+
+</div>
+
+
+                    </div>
+
+                    <!-- Hidden Filter Panel -->
+                    <div id="vendorFilterPanel" class="bg-white border-b border-slate-100 p-4 sm:p-6">
+                        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Name</label>
+                                <input type="text" name="name" placeholder="Search vendor name..."
+                                       class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div class="space-y-1">
+                                <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Email</label>
+                                <input type="email" name="email" placeholder="Search email..."
+                                       class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div class="sm:col-span-2 lg:col-span-1 flex items-end">
+    <div class="flex gap-3 w-full">
+        
+        <!-- Apply Filter -->
+        <button type="submit"
+                class="w-1/2 bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-[0.98]">
+            Apply Filter
+        </button>
+
+        <!-- Reset -->
+<a href="{% url 'vendor_list' %}"
+   class="w-1/2 text-center bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100 active:scale-[0.98]">
+    Reset
+</a>
+
+    </div>
+</div>
+                        </form>
+                    </div>
+
+                    <div class="overflow-x-auto custom-scrollbar">
+                        <table class="w-full text-left min-w-[600px]">
+                            <thead class="bg-slate-50 text-slate-500 text-[11px] font-black uppercase tracking-widest border-b border-slate-100">
+                            <tr>
+                                <th class="px-6 sm:px-8 py-4">Vendor Identity</th>
+                                <th class="px-6 sm:px-8 py-4">Contact Details</th>
+                                <th class="px-6 sm:px-8 py-4">Phone</th>
+                                <th class="px-6 sm:px-8 py-4 text-right">Actions</th>
+                            </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-slate-100">
+                            {% for v in vendors %}
+                            <tr class="hover:bg-slate-50 transition-colors group">
+                                <td class="px-6 sm:px-8 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400 font-bold group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors shrink-0">
+                                            {{ v.display_name|slice:":1"|upper }}
+                                        </div>
+                                        <div class="flex flex-col min-w-0">
+                                            <span class="font-bold text-slate-700 text-sm tracking-tight truncate">{{ v.display_name }}</span>
+                                            <span class="text-[10px] text-slate-400 uppercase font-bold tracking-widest">Supplier</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 sm:px-8 py-4">
+                                    <div class="flex items-center gap-2 text-sm text-slate-600 truncate">
+                                        <i data-lucide="mail" class="w-3.5 h-3.5 text-slate-300 shrink-0"></i>
+                                        {{ v.email|default:"No email set" }}
+                                    </div>
+                                </td>
+                                <td class="px-6 sm:px-8 py-4 text-sm text-slate-600">
+                                    <div class="flex items-center gap-2">
+                                        <i data-lucide="phone" class="w-3.5 h-3.5 text-slate-300 shrink-0"></i>
+                                        {{ v.mobile|default:"—" }}
+                                    </div>
+                                </td>
+                                <td class="px-6 sm:px-8 py-4">
+                                    <div class="flex items-center justify-end gap-2">
+                                        <a href="{% url 'edit_vendor' v.id %}" 
+                                           class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" 
+                                           title="Edit Vendor">
+                                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                        </a>
+
+                                        <form method="post" action="{% url 'delete_vendor' v.id %}" class="inline">
+                                            {% csrf_token %}
+                                            <button type="submit"
+                                                    onclick="return confirm('Delete this vendor? This may affect pending purchase orders.')"
+                                                    class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all"
+                                                    title="Delete">
+                                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center py-16 sm:py-24">
+                                    <div class="flex flex-col items-center px-4">
+                                        <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                            <i data-lucide="users" class="w-8 h-8 text-slate-200"></i>
+                                        </div>
+                                        <h3 class="text-slate-900 font-bold">No vendors found</h3>
+                                        <p class="text-slate-500 text-sm mt-1 max-w-xs text-center">Start by adding your first procurement partner to the system.</p>
+                                        <a href="{% url 'add_vendor' %}" class="mt-4 text-indigo-600 font-bold text-sm hover:underline flex items-center gap-2">
+                                            Add vendor now <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- PAGINATION — ADD after line 457 -->
+<div class="px-6 py-4 border-t border-slate-100 flex items-center justify-between">
+    <div class="flex flex-col">
+        <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+            Page {{ vendors.number }} of {{ vendors.paginator.num_pages }}
+        </p>
+    </div>
+<!--28-4-26-->
+    <div class="flex items-center gap-2">
+        <a href="?page={% if vendors.has_previous %}{{ vendors.previous_page_number }}{% else %}1{% endif %}&name={{ request.GET.name }}&email={{ request.GET.email }}"
+              class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200
+        {% if not vendors.has_previous %}opacity-40 pointer-events-none{% endif %}">
+            <i data-lucide="chevron-left" class="w-4 h-4"></i>
+        </a>
+
+        <a href="?page={% if vendors.has_next %}{{ vendors.next_page_number }}{% else %}{{ vendors.paginator.num_pages }}{% endif %}&name={{ request.GET.name }}&email={{ request.GET.email }}"
+        class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200
+        {% if not vendors.has_next %}opacity-40 pointer-events-none{% endif %}">
+            <i data-lucide="chevron-right" class="w-4 h-4"></i>
+        </a>
+<!--28-4-26-->
+    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    // Responsive Sidebar Logic
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const sidebarTexts = document.querySelectorAll('.sidebar-text');
+
+    function isMobile() {
+        return window.innerWidth < 640;
+    }
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (isMobile()) {
+            // Mobile: toggle drawer
+            const isOpen = sidebar.classList.contains('mobile-open');
+            if (isOpen) {
+                sidebar.classList.replace('mobile-open', 'mobile-closed');
+                overlay.classList.add('hidden');
+                overlay.classList.remove('opacity-100');
+            } else {
+                sidebar.classList.replace('mobile-closed', 'mobile-open');
+                overlay.classList.remove('hidden');
+                setTimeout(() => overlay.classList.add('opacity-100'), 10);
+            }
+        } else {
+            // Desktop: shrink behavior
+            sidebar.classList.toggle('w-64');
+            sidebar.classList.toggle('w-20');
+            sidebarTexts.forEach(el => el.classList.toggle('hidden'));
+        }
+    });
+
+    overlay.addEventListener('click', () => {
+        sidebar.classList.replace('mobile-open', 'mobile-closed');
+        overlay.classList.add('hidden');
+        overlay.classList.remove('opacity-100');
+    });
+
+    // Handle Window Resize
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            sidebar.classList.remove('mobile-open', 'mobile-closed');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('opacity-100');
+        } else {
+            if (!sidebar.classList.contains('mobile-open')) {
+                sidebar.classList.add('mobile-closed');
+            }
+        }
+    });
+
+    // Filter Panel Toggle
+    // function toggleVendorFilter() {
+    //     document.getElementById("vendorFilterPanel").classList.toggle("hidden");
+    // }
+
+    // Auto-hide messages
+    setTimeout(() => {
+        const messages = document.querySelectorAll('.alert-message');
+        messages.forEach(msg => {
+            msg.style.opacity = "0";
+            setTimeout(() => msg.remove(), 500);
+        });
+    }, 3000);
+
+    // --- Logout Flow ---
+        const logoutModal = document.getElementById('logout-modal');
+        const modalContent = document.getElementById('modal-content');
+        const logoutLoader = document.getElementById('logout-loader');
+        const logoutForm = document.getElementById('logout-form');
+
+        function openLogoutModal() {
+            logoutModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+            }, 300);
+        }
+
+        logoutForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeLogoutModal();
+            setTimeout(() => {
+                logoutLoader.classList.remove('hidden');
+                // Packing animation duration before final redirect
+                setTimeout(() => {
+                    this.submit();
+                }, 1600);
+            }, 300);
+        });
+</script>
+
+</body>
+</html>

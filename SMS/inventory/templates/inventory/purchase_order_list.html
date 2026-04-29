@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Purchase Orders</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        
+        /* Loader Animation */
+        .box-loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid #4f46e5;
+            border-bottom-color: transparent;
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Hide number input spinners for cleaner UI */
+       input[type="number"] {
+    border-radius: 16px; /* more rounded */
+    transition: all 0.2s ease;
+}
+
+input[type="number"]:focus {
+    border-color: #6366f1 !important; /* indigo-500 */
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+    background-color: white;
+}
+input[type="number"]::-webkit-inner-spin-button {
+    opacity: 1;
+    height: 28px;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+input[type="number"]:hover::-webkit-inner-spin-button,
+input[type="number"]:hover::-webkit-outer-spin-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+input[type="number"]:focus::-webkit-inner-spin-button,
+input[type="number"]:focus::-webkit-outer-spin-button {
+    opacity: 1;
+    pointer-events: auto;
+}
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+    <!-- PACKING LOADER OVERLAY -->
+    <div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+        <div class="box-loader"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logout-modal" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+        <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100" id="modal-content">
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-slate-900 text-center">Ready to go?</h3>
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">Confirm to sign out of your portal. We'll make sure your session is closed securely.</p>
+            <div class="flex flex-col gap-3">
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+                <button onclick="closeLogoutModal()" class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed md:static top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col transition-transform duration-300 -translate-x-full md:translate-x-0 z-50">
+
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div class="overflow-hidden sidebar-text">
+                    <h1 class="font-bold text-lg leading-none truncate">{{ company.name }}</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Enterprise</p>
+                </div>
+            </div>
+
+                                                <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-100">
+                <button onclick="openLogoutModal()" class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors group">
+                    <i data-lucide="log-out" class="w-5 h-5 transition-transform group-hover:-translate-x-1"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black/40 z-40 hidden md:hidden"></div>
+
+        <!-- Main Content Area -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            
+            {% if messages %}
+            <div class="flex justify-center mt-6">
+                {% for message in messages %}
+                <div class="px-5 py-3 rounded-xl shadow-lg flex items-center gap-2 text-sm font-semibold 
+                    {% if message.tags == 'success' %} bg-rose-100 text-rose-700 border border-rose-300
+                    {% elif message.tags == 'error' %} bg-red-100 text-red-700 border border-red-300
+                    {% else %} bg-slate-100 text-slate-700 border border-slate-300 {% endif %}">
+                    {% if message.tags == 'success' %} <i data-lucide="check-circle" class="w-4 h-4"></i>
+                    {% elif message.tags == 'error' %} <i data-lucide="x-circle" class="w-4 h-4"></i> {% endif %}
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Header -->
+            
+        <!-- <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0"> -->
+             <header class="min-h-[4rem] bg-white border-b border-slate-200
+               flex items-center justify-between px-4 sm:px-8 shrink-0">
+  
+            <div class="flex items-center gap-4">
+                    <!-- <button id="toggle-sidebar" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button> -->
+                   <button id="toggle-sidebar"
+        class="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
+    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+
+                        <nav class="flex flex-wrap text-sm text-slate-500 gap-2 items-center">
+
+                        <a href="{% url 'company_dashboard' %}" class="hover:text-indigo-600 transition-colors">Dashboard</a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                        <!-- <span class="font-semibold text-slate-800">Purchase Orders</span> -->
+                         <span class="font-semibold text-slate-800 truncate max-w-[60vw]">
+    Purchase Orders
+</span>
+
+                    </nav>
+                </div>
+
+                <div class="flex items-center gap-4">
+                    <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                        {{ request.user.username|slice:":1"|upper }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content -->
+            <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <div class="max-w-7xl mx-auto space-y-6">
+                    
+                    <!-- Page Action Bar -->
+                    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="text-2xl font-bold tracking-tight text-slate-900">Purchase Orders</h2>
+                            <p class="text-slate-500 text-sm">Manage procurement from vendors and track incoming stock shipments.</p>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+
+        <a href="{% url 'export_purchase_orders_pdf' %}"
+           class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200
+                  rounded-xl text-xs font-bold text-slate-600
+                  hover:bg-slate-50 transition-all shadow-sm">
+            <i data-lucide="download" class="w-4 h-4"></i>
+            Export PDF
+        </a>
+
+        <a href="{% url 'add_purchase_order' %}"
+           class="inline-flex items-center gap-2 bg-indigo-600 text-white
+                  px-6 py-2.5 rounded-xl font-bold text-sm
+                  shadow-lg shadow-indigo-100 hover:bg-indigo-700 transition-all">
+            <i data-lucide="plus" class="w-4 h-4"></i>
+            New Purchase
+        </a>
+
+    </div>
+    </div>
+                    <!-- Procurement Stats -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                            <div class="bg-indigo-50 text-indigo-600 p-2 rounded-lg"><i data-lucide="clipboard-list" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total POs</p>
+                                <p class="text-lg font-bold">{{ orders.paginator.count }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                            <div class="bg-amber-50 text-amber-600 p-2 rounded-lg"><i data-lucide="truck" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">In Transit</p>
+                               <p class="text-lg font-bold">{{ in_transit_count }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                            <div class="bg-emerald-50 text-emerald-600 p-2 rounded-lg"><i data-lucide="box" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Received</p>
+                                <p class="text-lg font-bold">{{ received_count }}</p>
+                            </div>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                            <div class="bg-rose-50 text-rose-600 p-2 rounded-lg"><i data-lucide="credit-card" class="w-5 h-5"></i></div>
+                            <div>
+                                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Spent</p>
+                             <p id="total-spent" class="text-lg font-bold text-rose-600" data-amount="{{ total_spent }}"></p>
+                            </div>
+                        </div>
+                    </div>
+
+<!-- FILTER BAR SECTION -->
+<div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+
+    <!-- TOP ROW -->
+    <div class="flex flex-col sm:flex-row gap-3">
+
+        <!-- Search Input -->
+        <div class="relative flex-1">
+            <i data-lucide="search"
+               class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+
+            <input type="text"
+                   id="po-search"
+                   placeholder="Search PO or vendor..."
+                   class="w-full pl-10 pr-4 h-[44px] bg-slate-50 border border-slate-200 rounded-xl text-sm
+                          focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500">
+        </div>
+
+        <!-- Buttons -->
+        <div class="flex gap-3 w-full sm:w-auto">
+
+            <button onclick="filterOrders()"
+                class="flex-1 sm:flex-none px-6 h-[44px] bg-indigo-600 text-white text-sm font-bold rounded-xl
+                       hover:bg-indigo-700 transition-all">
+                Search
+            </button>
+
+            <button id="clear-filters"
+                class="flex-1 sm:flex-none px-6 h-[44px] bg-indigo-600 text-white text-sm font-bold rounded-xl
+                       hover:bg-indigo-700 transition-all">
+                Reset
+            </button>
+
+        </div>
+    </div>
+    <!--  ROW 2 -->
+   <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+
+        <!-- Status -->
+        <div class="relative w-full">
+
+    <!-- hidden input -->
+    <input type="hidden" id="status-filter" value="ALL">
+
+    <!-- button -->
+    <button type="button" id="statusBtn"
+        class="w-full h-[44px] px-4 bg-slate-50 border border-slate-200 rounded-xl text-sm
+               flex justify-between items-center">
+
+        <span id="statusLabel" class="truncate text-slate-500">
+            All Status
+        </span>
+
+        <i data-lucide="chevron-down" class="w-4 h-4"></i>
+    </button>
+
+    <!-- dropdown -->
+    <div id="statusMenu"
+        class="hidden absolute top-full mt-1 z-50
+               left-0 right-0 w-full
+               bg-white border rounded-lg shadow-lg
+               max-h-60 overflow-y-auto">
+
+        <div data-value="ALL" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">All Status</div>
+        <div data-value="PARTIAL" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">Partial</div>
+        <div data-value="ORDERED" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">Ordered</div>
+        <div data-value="DRAFT" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">Draft</div>
+        <div data-value="RECEIVED" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">Received</div>
+        <div data-value="COMPLETED" class="px-4 py-2 hover:bg-indigo-50 cursor-pointer">Completed</div>
+    </div>
+</div>
+        <!-- Min Amount -->
+        <div class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
+        ₹
+    </span>
+
+    <input type="number"
+        id="min-amount"
+        step="0.01"
+        min="0"
+        placeholder="Min Amount"
+        class="w-full h-[44px] pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-sm
+               focus:outline-none focus:ring-2 focus:ring-indigo-500">
+</div>
+
+<!-- Max Amount -->
+<div class="relative">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-semibold">
+        ₹
+    </span>
+
+    <input type="number"
+        id="max-amount"
+        step="0.01"
+        min="0"
+        placeholder="Max Amount"
+        class="w-full h-[44px] pl-8 pr-3 bg-slate-50 border border-slate-200 rounded-xl text-sm
+               focus:outline-none focus:ring-2 focus:ring-indigo-500">
+</div>
+
+    </div>
+
+</div>
+
+                    <!-- PO Table Card -->
+                   <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto custom-scrollbar w-full">
+                                <table class="min-w-[1100px] w-full table-auto text-left">
+                                <thead class="bg-slate-50 text-slate-500 text-[11px] font-bold uppercase tracking-wider">
+                                    <tr>
+                                        <th class="px-4 sm:px-8 py-3 sm:py-4">PO Number</th>
+                                        <th class="px-4 sm:px-8 py-3 sm:py-4">Vendor / Supplier</th>
+                                        <th class="px-4 sm:px-8 py-3 sm:py-4 text-center">Status</th>
+                                        <th class="px-4 sm:px-8 py-3 sm:py-4">Total Amount</th>
+                                        <th class="px-4 sm:px-8 py-3 sm:py-4 text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100" id="po-table-body">
+                                    {% for o in orders %}
+                                    <tr class="hover:bg-slate-50/80 transition-colors group po-row" 
+                                        data-po="{{ o.order_number|upper }}" 
+                                        data-vendor="{{ o.vendor.company_name|default:o.vendor.display_name|upper }} {{ o.vendor.display_name|upper }}"
+                                        data-status="{{ o.status|upper }}"
+                                        data-amount="{{ o.total_amount }}">
+                                        
+                                        <td class="px-4 sm:px-8 py-3 sm:py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-9 h-9 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                                                    <i data-lucide="file-text" class="w-4 h-4"></i>
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="font-bold text-slate-800 text-sm tracking-tight">{{ o.order_number }}</span>
+                                                    <span class="text-[10px] text-slate-400 font-medium">Internal Procurement</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 sm:px-8 py-3 sm:py-4">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-500">
+                                                    {{ o.vendor.display_name|slice:":1"|upper }}
+                                                </div>
+                                                <div class="flex flex-col">
+                                                    <span class="text-sm font-bold text-slate-700 leading-tight">
+                                                        {{ o.vendor.company_name|default:o.vendor.display_name }}
+                                                    </span>
+                                                    <span class="text-[10px] text-slate-400 font-medium">
+                                                        {{ o.vendor.display_name }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                     <td class="px-4 sm:px-8 py-3 sm:py-4 text-center">
+{% if o.status == 'DRAFT' %}
+    <span style="background:#e2e8f0; color:#374151;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">DRAFT</span>
+{% elif o.status == 'PENDING' %}
+    <span style="background:#fef9c3; color:#92400e;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">PENDING</span>
+{% elif o.status == 'ORDERED' %}
+    <span style="background:#dbeafe; color:#1e40af;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">ORDERED</span>
+{% elif o.status == 'RECEIVED' %}
+    <span style="background:#d1fae5; color:#065f46;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">RECEIVED</span>
+{% elif o.status == 'COMPLETED' %}
+    <span style="background:#ede9fe; color:#5b21b6;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">COMPLETED</span>
+{% else %}
+    <span style="background:#f1f5f9; color:#475569;" class="px-3 py-1 text-[10px] font-black uppercase rounded-full">{{ o.status }}</span>
+{% endif %}
+</td>
+
+                                        <td class="px-4 sm:px-8 py-3 sm:py-4">
+                                            <span class="font-bold text-slate-900 po-amount" data-amount="{{ o.total_amount }}"></span>
+                                        </td>
+                                        <td class="px-4 sm:px-8 py-3 sm:py-4 text-center">
+                                        <div class="flex justify-center items-center gap-6">
+
+                                                {% if o.status == "DRAFT" %}
+                                        <a href="{% url 'purchase_order_detail' o.id %}"
+                                        class="inline-flex items-center justify-center gap-2 px-5 py-2
+                                                min-w-[110px]
+                                                bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold
+                                                hover:bg-indigo-600 hover:text-white transition-all">
+                                            <i data-lucide="edit" class="w-4 h-4"></i>
+                                            Edit
+                                        </a>
+
+                                        <button 
+                                            onclick="openDeleteModal({{ o.id }})"
+                                            class="inline-flex items-center justify-center gap-2 px-5 py-2
+                                                min-w-[110px]
+                                                bg-rose-50 text-rose-600 rounded-xl text-xs font-bold
+                                                hover:bg-rose-600 hover:text-white transition-all">
+                                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                            Delete
+                                        </button>
+
+                                                {% else %}
+                                        <a href="{% url 'purchase_order_detail' o.id %}" 
+                                        class="inline-flex items-center justify-center gap-2 px-5 py-2
+                                                min-w-[110px]
+                                                bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold
+                                                hover:bg-indigo-600 hover:text-white transition-all">
+                                            <i data-lucide="eye" class="w-4 h-4"></i>
+                                            Details
+                                        </a>
+
+                                        <a href="{% url 'purchase_order_print' o.id %}" target="_blank"
+                                        class="inline-flex items-center justify-center gap-2 px-5 py-2
+                                                min-w-[110px]
+                                                bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold
+                                                hover:bg-indigo-600 hover:text-white transition-all">
+                                            <i data-lucide="printer" class="w-4 h-4"></i>
+                                            Print
+                                        </a>
+                                            <!-- 6-4-26 -->
+                                        {% endif %}
+
+                                    </div>
+                                </td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr id="empty-row">
+                                        <td colspan="5" class="px-8 py-20 text-center">
+                                            <div class="flex flex-col items-center">
+                                                <div class="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4">
+                                                    <i data-lucide="shopping-cart" class="w-8 h-8 text-slate-300"></i>
+                                                </div>
+                                                <h3 class="text-slate-900 font-bold">No purchase orders found</h3>
+                                                <p class="text-slate-500 text-sm mt-1">Start by ordering stock from your registered vendors.</p>
+                                                <a href="{% url 'add_purchase_order' %}" class="mt-6 text-indigo-600 font-bold text-sm hover:underline flex items-center gap-2">
+                                                    Create PO &rarr;
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                    <!-- Dynamic Empty State Row (Hidden by default) -->
+                                    <tr id="no-results-row" class="hidden">
+                                        <td colspan="5" class="px-8 py-20 text-center text-slate-400">
+                                            <div class="flex flex-col items-center">
+                                                <i data-lucide="search-x" class="w-10 h-10 mb-4 opacity-20"></i>
+                                                <p class="font-medium">No orders match your current filters.</p>
+                                                <button onclick="resetFilters()" class="text-indigo-600 text-sm font-bold mt-2 hover:underline">Clear all filters</button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            </div>
+                            <div class="flex items-center justify-between px-6 py-4 bg-slate-50 border-t">
+<!-- 24-3-26 -->
+<div class="flex flex-col">
+    <p class="text-[11px] text-slate-400 font-bold uppercase tracking-widest">
+        Page {{ orders.number }} of {{ orders.paginator.num_pages }}
+    </p>
+</div>
+
+<div class="flex items-center gap-2">
+
+<a href="?page={% if orders.has_previous %}{{ orders.previous_page_number }}{% else %}1{% endif %}&search={{ request.GET.search }}&status={{ request.GET.status }}&min_amount={{ request.GET.min_amount }}&max_amount={{ request.GET.max_amount }}"
+class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200
+{% if not orders.has_previous %}opacity-40 pointer-events-none{% endif %}">
+<i data-lucide="chevron-left" class="w-4 h-4"></i>
+</a>
+
+<a href="?page={% if orders.has_next %}{{ orders.next_page_number }}{% else %}{{ orders.paginator.num_pages }}{% endif %}&search={{ request.GET.search }}&status={{ request.GET.status }}&min_amount={{ request.GET.min_amount }}&max_amount={{ request.GET.max_amount }}"
+class="w-8 h-8 flex items-center justify-center rounded-lg border border-slate-200
+{% if not orders.has_next %}opacity-40 pointer-events-none{% endif %}">
+<i data-lucide="chevron-right" class="w-4 h-4"></i>
+</a>
+<!-- 24-3-26 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals (Print, Logout etc) -->
+    <div id="print-modal" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[90] hidden flex items-center justify-center">
+        <div class="bg-white rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="bg-indigo-100 text-indigo-600 p-3 rounded-xl">
+                    <i data-lucide="printer" class="w-6 h-6"></i>
+                </div>
+                <h3 class="text-xl font-bold">Print Purchase Order</h3>
+            </div>
+            <div class="space-y-4">
+                <label class="flex items-center gap-3"><input type="checkbox" checked class="rounded border-slate-300 text-indigo-600"><span class="text-sm font-medium">Include vendor details</span></label>
+                <label class="flex items-center gap-3"><input type="checkbox" checked class="rounded border-slate-300 text-indigo-600"><span class="text-sm font-medium">Include pricing & totals</span></label>
+            </div>
+            <div class="flex justify-end gap-3 mt-8">
+                <button onclick="closePrintModal()" class="px-5 py-2 bg-slate-100 rounded-xl text-slate-600 font-bold hover:bg-slate-200">Cancel</button>
+                <a id="print-link" href="#" target="_blank" class="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 shadow-lg">Print Now</a>
+            </div>
+        </div>
+    </div>
+   <!-- DELETE CONFIRM MODAL -->
+<div id="delete-modal"
+     class="fixed inset-0 bg-black/40 backdrop-blur-sm hidden
+            flex items-center justify-center z-50">
+
+    <div class="bg-white rounded-2xl p-8 w-full max-w-sm shadow-2xl">
+        
+        <div class="flex flex-col items-center text-center">
+            
+            <div class="w-16 h-16 bg-rose-50 text-rose-600
+                        rounded-2xl flex items-center justify-center mb-4">
+                <i data-lucide="trash-2" class="w-8 h-8"></i>
+            </div>
+
+            <h3 class="text-xl font-bold text-slate-800">
+                Delete Purchase Order?
+            </h3>
+
+            <p class="text-sm text-slate-500 mt-2">
+                This action cannot be undone.
+            </p>
+
+            <div class="flex gap-3 mt-6 w-full">
+                
+                <form id="delete-form" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full px-4 py-2 bg-rose-600 text-white
+                               rounded-lg font-semibold hover:bg-rose-700">
+                        Yes, Delete
+                    </button>
+                </form>
+
+                <button onclick="closeDeleteModal()"
+                    class="w-full px-4 py-2 bg-slate-100 text-slate-700
+                           rounded-lg font-semibold hover:bg-slate-200">
+                    Cancel
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- 24-3-26 -->
+<script>
+
+
+
+
+function formatINR(amount) {
+        if (!amount) return "₹0.00";
+
+        let number = Number(amount);
+
+        return "₹" + number.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+
+// ==== SIDEBAR ====
+const sidebar = document.getElementById('sidebar');
+const toggleBtn = document.getElementById('toggle-sidebar');
+const overlay = document.getElementById('sidebar-overlay');
+
+
+
+
+function openSidebar() {
+    sidebar.classList.remove('-translate-x-full');
+    overlay.classList.remove('hidden');
+}
+
+function closeSidebar() {
+    sidebar.classList.add('-translate-x-full');
+    overlay.classList.add('hidden');
+}
+
+toggleBtn.addEventListener('click', () => {
+    if (window.innerWidth >= 768) {
+        sidebar.classList.toggle('w-64');
+        sidebar.classList.toggle('w-20');
+
+        document.querySelectorAll('.sidebar-text')
+            .forEach(el => el.classList.toggle('hidden'));
+    } else {
+        sidebar.classList.contains('-translate-x-full')
+            ? openSidebar()
+            : closeSidebar();
+    }
+});
+
+overlay.addEventListener('click', closeSidebar);
+
+
+// ==== FILTER (FIXED SEARCH) ====
+const poSearchInput = document.getElementById('po-search');
+const statusFilterSelect = document.getElementById('status-filter');
+const minAmountInput = document.getElementById('min-amount');
+const maxAmountInput = document.getElementById('max-amount');
+const clearFilterBtn = document.getElementById('clear-filters');
+
+//  FIXED FUNCTION
+function filterOrders() {
+
+    const search = poSearchInput.value.trim();
+    const status = document.getElementById("status-filter").value;
+    const min = minAmountInput.value;
+    const max = maxAmountInput.value;
+
+    const params = new URLSearchParams(window.location.search);
+
+    // 🔥 Reset old params
+    params.delete('search');
+    params.delete('status');
+    params.delete('min_amount');
+    params.delete('max_amount');
+    params.delete('page'); // IMPORTANT: reset pagination
+
+    if (search) params.set('search', search);
+    if (status && status !== "ALL") params.set('status', status);
+    if (min) params.set('min_amount', min);
+    if (max) params.set('max_amount', max);
+
+    // DEBUG (optional)
+    console.log("Search Params:", params.toString());
+
+    window.location.href = "?" + params.toString();
+}
+
+//  ENTER KEY SUPPORT
+poSearchInput.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") {
+        e.preventDefault();
+        filterOrders();
+    }
+});
+
+//  RESET BUTTON FIX
+clearFilterBtn.addEventListener("click", () => {
+    window.location.href = window.location.pathname;
+});
+
+//  AUTO-FILL VALUES AFTER SEARCH
+const params = new URLSearchParams(window.location.search);
+
+poSearchInput.value = params.get('search') || '';
+statusFilterSelect.value = params.get('status') || 'ALL';
+minAmountInput.value = params.get('min_amount') || '';
+maxAmountInput.value = params.get('max_amount') || '';
+
+
+// ==== LOGOUT ====
+const logoutModal = document.getElementById('logout-modal');
+const modalContent = document.getElementById('modal-content');
+const logoutLoader = document.getElementById('logout-loader');
+const logoutForm = document.getElementById('logout-form');
+
+function openLogoutModal() {
+    logoutModal.classList.remove('hidden');
+    setTimeout(() => modalContent.classList.remove('scale-95', 'opacity-0'), 10);
+}
+
+function closeLogoutModal() {
+    modalContent.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => logoutModal.classList.add('hidden'), 300);
+}
+
+logoutForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    closeLogoutModal();
+    setTimeout(() => {
+        logoutLoader.classList.remove('hidden');
+        setTimeout(() => this.submit(), 1600);
+    }, 300);
+});
+
+
+// ==== PRINT MODAL ====
+const printModal = document.getElementById('print-modal');
+const printLink = document.getElementById('print-link');
+
+function openPrintModal(orderId) {
+    printLink.href = `/purchase-orders/${orderId}/print/`;
+    printModal.classList.remove('hidden');
+}
+
+function closePrintModal() {
+    printModal.classList.add('hidden');
+}
+
+
+// ==== DELETE MODAL ====
+const deleteModal = document.getElementById("delete-modal");
+const deleteForm = document.getElementById("delete-form");
+
+function openDeleteModal(id) {
+    deleteForm.action = `/inventory/purchase-orders/${id}/delete/`;
+    deleteModal.classList.remove("hidden");
+}
+
+function closeDeleteModal() {
+    deleteModal.classList.add("hidden");
+}
+
+
+// ==== INPUT VALIDATION ====
+function preventNegative(input) {
+    if (input.value !== '' && Number(input.value) < 0) {
+        input.value = '';
+    }
+}
+
+minAmountInput.addEventListener('input', () => preventNegative(minAmountInput));
+maxAmountInput.addEventListener('input', () => preventNegative(maxAmountInput));
+
+const MAX_AMOUNT = 100000000; // 10 Cr
+
+function enforceMaxLimit(input) {
+    if (input.value === '') return;
+
+    let val = Number(input.value);
+
+    if (val < 0) {
+        input.value = '';
+        return;
+    }
+
+    if (val > MAX_AMOUNT) {
+        input.value = MAX_AMOUNT;
+    }
+}
+
+minAmountInput.addEventListener('input', () => enforceMaxLimit(minAmountInput));
+maxAmountInput.addEventListener('input', () => enforceMaxLimit(maxAmountInput));
+
+
+// ==== INIT ====
+window.onload = () => {
+    lucide.createIcons();
+
+    const totalSpentEl = document.getElementById("total-spent");
+    if (totalSpentEl) {
+        totalSpentEl.innerText = formatINR(totalSpentEl.dataset.amount);
+    }
+
+    document.querySelectorAll(".po-amount").forEach(el => {
+        const amount = el.dataset.amount;
+        el.innerText = formatINR(amount);
+    });
+
+    setTimeout(() => {
+        const messages = document.querySelectorAll('[class*="rose-100"], [class*="red-100"]');
+        messages.forEach(msg => {
+            msg.style.transition = "opacity 0.5s ease";
+            msg.style.opacity = "0";
+            setTimeout(() => msg.remove(), 500);
+        });
+    }, 3000);
+};
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+
+    const btn = document.getElementById("statusBtn");
+    const menu = document.getElementById("statusMenu");
+    const label = document.getElementById("statusLabel");
+    const input = document.getElementById("status-filter");
+
+    btn.addEventListener("click", () => {
+        menu.classList.toggle("hidden");
+    });
+
+    menu.querySelectorAll("div").forEach(option => {
+        option.addEventListener("click", () => {
+            label.textContent = option.textContent;
+            input.value = option.dataset.value;
+            menu.classList.add("hidden");
+        });
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+            menu.classList.add("hidden");
+        }
+    });
+
+});
+</script>
+<!-- 24-3-26 -->
+</body>
+</html>

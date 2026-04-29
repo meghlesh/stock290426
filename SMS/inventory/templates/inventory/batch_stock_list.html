@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Batch-wise Stock</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+    /* --- Packing Loader Animation Styles --- */
+        .box-loader {
+            width: 80px;
+            height: 80px;
+            background: #4f46e5;
+            position: relative;
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+        .box-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3730a3;
+            transform: translateY(-50%);
+        }
+        .box-loader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3730a3;
+            transform: translateX(-50%);
+        }
+        @keyframes box-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-35px) rotate(8deg); }
+        }
+        .conveyor-belt {
+            width: 140px;
+            height: 6px;
+            background: #e2e8f0;
+            margin-top: 15px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        .conveyor-belt::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 100%;
+            background: #4f46e5;
+            animation: conveyor-move 0.8s infinite linear;
+        }
+        @keyframes conveyor-move {
+            from { left: -50px; }
+            to { left: 140px; }
+        } 
+         #sidebar.collapsed {                
+            width: 6rem;
+        }
+
+        #sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #sidebar.collapsed nav a {
+            justify-content: center;
+        }   
+
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+   
+   </style>
+<!--8-4-26-->
+   <style>
+@media print {
+    /* Hide sidebar, header, all action buttons */
+    #sidebar,
+    header,
+    button {
+        display: none !important;
+    }
+
+    /*  Hide Export PDF button */
+    #exportPdfBtn {
+    display: none !important;
+}
+
+    /*  Hide Search bar, Search button, Reset button */
+    form[method="GET"],
+    .search-bar-wrapper {
+        display: none !important;
+    }
+
+    /*  Hide the active filter strip */
+    #active-filter-bar {
+        display: none !important;
+    }
+
+    /*  Hide pagination footer */
+    .mt-6.px-8.py-4 {
+        display: none !important;
+    }
+}
+</style>
+<!--8-4-26-->
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+   
+<div class="flex h-screen overflow-hidden">
+
+    
+
+    <!-- PACKING LOADER OVERLAY -->
+    <div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+        <div class="box-loader"></div>
+        <div class="conveyor-belt"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logout-modal" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+        <div class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100" id="modal-content">
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-slate-900 text-center">Ready to go?</h3>
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">Confirm to sign out of your portal. We'll make sure your session is closed securely.</p>
+            <!-- <div class="flex flex-col gap-3"> -->
+                <div class="flex flex-wrap gap-2">
+
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+                <button onclick="closeLogoutModal()" class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+  <!-- Sidebar Backdrop -->
+<!-- SIDEBAR BACKDROP (Mobile Only) -->
+<div id="sidebar-backdrop"
+     class="fixed inset-0 bg-black/40 z-30 hidden md:hidden"></div>
+
+<!-- SIDEBAR -->
+<aside id="sidebar"
+ class="fixed md:static z-40 md:z-auto
+        w-64 md:w-64
+        -translate-x-full md:translate-x-0
+        bg-white border-r border-slate-200
+        flex flex-col transition-all duration-300 h-full">
+
+    <!-- Brand -->
+    <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+        <div class="bg-indigo-600 p-2 rounded-lg text-white">
+            <i data-lucide="building-2" class="w-6 h-6"></i>
+        </div>
+        <div class="sidebar-text">
+            <h1 class="font-bold text-lg truncate">{{ company.name }}</h1>
+            <p class="text-[10px] text-slate-400 font-bold uppercase">Enterprise</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+                                        <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+    <!-- Logout -->
+    <div class="p-4 border-t">
+        <button onclick="openLogoutModal()"
+                class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg">
+            <i data-lucide="log-out" class="w-5 h-5"></i>
+            <span class="sidebar-text">Logout</span>
+        </button>
+    </div>
+</aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 md:px-8 shrink-0">
+    
+    <!-- Left: Hamburger + Breadcrumb -->
+    <div class="flex items-center gap-3 min-w-0">
+        <button id="toggle-sidebar"
+            class="p-2.5 rounded-lg hover:bg-slate-100 text-slate-600 shrink-0">
+            <i data-lucide="menu" class="w-5 h-5"></i>
+        </button>
+
+        <nav class="flex items-center gap-2 text-xs md:text-sm text-slate-500 whitespace-nowrap overflow-hidden">
+            <a href="/company/dashboard/" class="hover:text-indigo-600 shrink-0">
+                Dashboard
+            </a>
+            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300 shrink-0"></i>
+            <span class="font-semibold text-slate-800 truncate">
+                Batch-wise Stock
+            </span>
+        </nav>
+    </div>
+
+    <!-- Right: User Icon -->
+    <div class="flex items-center shrink-0">
+        <div
+            class="h-9 w-9 rounded-full bg-indigo-100 flex items-center justify-center
+                   text-indigo-700 font-bold border-2 border-white shadow-sm">
+            {{ request.user.username|slice:":1"|upper }}
+        </div>
+    </div>
+
+</header>
+
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            
+            <div class="max-w-7xl mx-auto space-y-6">
+
+               
+                
+                <!-- Page Title -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Batch-wise Stock Control</h2>
+                        <p class="text-slate-500 text-sm">Detailed visibility into specific product batches and expiration windows.</p>
+                    </div>
+                    <div class="flex gap-2 overflow-x-auto whitespace-nowrap scrollbar-hide">
+
+                        <!-- Export PDF Button 13-1-26 -->
+<a id="exportPdfBtn" href="{% url 'export_batch_stock_pdf' %}?status={{ request.GET.status|default:'' }}&q={{ request.GET.q|default:'' }}"
+   class="inline-flex items-center gap-2 px-4 py-2
+          bg-white border border-slate-200
+          rounded-lg text-sm font-bold text-slate-700
+          hover:bg-slate-50 shadow-sm">
+    <i data-lucide="download" class="w-4 h-4"></i>
+    Export PDF
+</a>
+<button
+    id="printReportBtn"
+    type="button"
+    class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"
+>
+    <i data-lucide="printer" class="w-4 h-4"></i>
+    Print Report
+</button>
+
+<button
+    id="adjustStockBtn"
+    type="button"
+    class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-700"
+>
+    <i data-lucide="edit-3" class="w-4 h-4"></i>
+    Adjust Stock
+</button>
+                    </div>
+                </div>
+
+                <!-- Snapshot Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="bg-indigo-50 text-indigo-600 p-2 rounded-xl"><i data-lucide="layers" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Batches</p>
+                            <p class="text-lg font-black text-slate-800">{{ active_count }}</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="bg-rose-50 text-rose-600 p-2 rounded-xl"><i data-lucide="alert-octagon" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expired</p>
+                            <p class="text-lg font-black text-rose-600">
+    {{ expired_count }} Batches
+</p>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 text-amber-600">
+                        <div class="bg-amber-50 p-2 rounded-xl"><i data-lucide="hourglass" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Expiring Soon</p>
+                            <p class="text-lg font-black">
+    {{ near_expiry_count }} Batches
+                            </p>
+
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+                        <div class="bg-emerald-50 text-emerald-600 p-2 rounded-xl"><i data-lucide="check-circle" class="w-5 h-5"></i></div>
+                        <div>
+                            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Good Condition</p>
+                            <p class="text-lg font-black text-slate-800">
+    {{ good_condition_percent }}%
+</p>
+
+                        </div>
+                    </div>
+                </div>
+
+              <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+
+<!-- SEARCH BAR (UPDATED FOR GALAXY Z FOLD 5 RESPONSIVENESS) -->
+<div class="px-6 py-4 border-b border-slate-200">
+  <form method="GET" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full">
+
+    <!-- Hidden status filter -->
+    {% if request.GET.status %}
+    <input type="hidden" name="status" value="{{ request.GET.status }}">
+    {% endif %}
+
+    <!--  Search Input -->
+    <div class="relative flex-1">
+      <i data-lucide="search"
+        class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+
+      <input
+        type="text"
+        name="q"
+        placeholder="Search batch or product..."
+        class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        value="{{ request.GET.q }}"
+      />
+    </div>
+
+    <!--Buttons -->
+    <div class="flex items-center gap-2">
+
+        <!-- Search -->
+        <button
+          type="submit"
+          class="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium whitespace-nowrap transition-colors">
+          Search
+        </button>
+
+        <!-- Reset-->
+        <a href="/inventory/batches/"
+          class="flex-1 sm:flex-none px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium whitespace-nowrap text-center transition-colors">
+          Reset
+        </a>
+
+    </div>
+
+  </form>
+</div>
+
+<!-- ACTIVE FILTER -->
+{% if active_filter %}
+<div class="px-6 py-3 border-b border-slate-200 flex items-center gap-2">
+<span class="text-xs font-semibold text-slate-500">
+Active Filter:
+</span>
+
+{% if active_filter == "near_expiry" %}
+<span class="px-2.5 py-1 bg-amber-100 text-amber-700 text-xs rounded-full">
+Near Expiry
+</span>
+{% elif active_filter == "expired" %}
+<span class="px-2.5 py-1 bg-rose-100 text-rose-700 text-xs rounded-full">
+Expired
+</span>
+{% endif %}
+
+<a href="/inventory/batches/"
+class="ml-auto text-xs font-semibold text-indigo-600 flex items-center gap-1">
+<i data-lucide="x-circle" class="w-3.5 h-3.5"></i>
+Clear Filter
+</a>
+</div>
+{% endif %}
+
+<!-- TABLE -->
+<div class="overflow-x-auto">
+<table class="min-w-full text-sm text-left text-slate-700">
+
+<thead class="bg-slate-100 text-xs font-semibold uppercase text-slate-500 border-b">
+<tr>
+<th class="px-6 py-3">Product Information</th>
+<th class="px-6 py-3">Batch Number</th>
+<th class="px-6 py-3">Expiry Date</th>
+<th class="px-6 py-3 text-right">Qty in Stock</th>
+<th class="px-6 py-3 text-center">Compliance Status</th>
+</tr>
+</thead>
+
+<tbody class="divide-y divide-slate-200">
+
+{% for b in batches %}
+<tr class="hover:bg-slate-50">
+
+<td class="px-6 py-4">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-xs">
+{{ b.product.name|slice:":1"|upper }}
+</div>
+<span class="font-medium text-slate-800">
+{{ b.product.name }}
+</span>
+</div>
+</td>
+
+<td class="px-6 py-4">
+<span class="text-xs font-mono bg-slate-100 px-2 py-1 rounded">
+{{ b.batch_number }}
+</span>
+</td>
+
+<td class="px-6 py-4">
+<div class="flex items-center gap-2">
+<i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+{{ b.expiry_date|date:"d M Y" }}
+</div>
+</td>
+
+<td class="px-6 py-4 text-right font-semibold">
+{{ b.quantity }}
+<span class="text-xs text-slate-400">Units</span>
+</td>
+
+<td class="px-6 py-4 text-center">
+
+{% if b.expiry_status == "EXPIRED" %}
+<span class="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-100 text-rose-700 text-xs font-semibold rounded-full">
+<i data-lucide="alert-triangle" class="w-3 h-3"></i>
+Expired
+</span>
+
+{% elif b.expiry_status == "NEAR_EXPIRY" %}
+<span class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 text-amber-700 text-xs font-semibold rounded-full">
+<i data-lucide="clock" class="w-3 h-3"></i>
+Near Expiry
+</span>
+
+{% else %}
+<span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
+<i data-lucide="shield-check" class="w-3 h-3"></i>
+Safe
+</span>
+{% endif %}
+
+</td>
+
+</tr>
+{% endfor %}
+
+</tbody>
+</table>
+</div>
+                    </div>
+
+                    <!-- Footer -->
+                   <div class="mt-6 px-8 py-4 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+
+<p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+FEFO (First-Expiry, First-Out) Recommended
+</p>
+
+<div class="flex items-center gap-3">
+
+<a href="{% if page_obj.has_previous %}?page={{ page_obj.previous_page_number }}&status={{ request.GET.status|default:'' }}&q={{ request.GET.q|default:'' }}{% else %}#{% endif %}"
+class="p-3 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 shadow-sm
+{% if not page_obj.has_previous %} opacity-40 cursor-not-allowed {% endif %}">
+<i data-lucide="chevron-left" class="w-4 h-4"></i>
+</a>
+
+<span class="text-sm text-slate-600 font-medium">
+Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+</span>
+
+<a href="{% if page_obj.has_next %}?page={{ page_obj.next_page_number }}&status={{ request.GET.status|default:'' }}&q={{ request.GET.q|default:'' }}{% else %}#{% endif %}"
+class="p-3 bg-white border border-slate-300 rounded-lg hover:bg-slate-100 shadow-sm
+{% if not page_obj.has_next %} opacity-40 cursor-not-allowed {% endif %}">
+<i data-lucide="chevron-right" class="w-4 h-4"></i>
+</a>
+
+</div>
+</div>
+
+            </div>
+        </div>
+    </main>
+    <!-- TOAST GOES HERE (IMPORTANT) -->
+{% if messages %}
+<div id="toast-container"
+     class="fixed top-20 left-[50%] -translate-x-1/2 z-[9999] pointer-events-none">
+
+    {% for message in messages %}
+    <div class="mb-2 px-6 py-3 rounded-xl shadow-lg flex items-center gap-2 font-semibold pointer-events-auto
+        {% if message.tags == 'success' %}
+            bg-green-100 border border-green-400 text-green-800
+        {% elif message.tags == 'error' %}
+            bg-red-100 border border-red-400 text-red-800
+        {% endif %}">
+
+        {% if message.tags == 'success' %}
+            <i data-lucide="check-circle" class="w-5 h-5 text-green-700"></i>
+        {% elif message.tags == 'error' %}
+            <i data-lucide="x-circle" class="w-5 h-5 text-red-700"></i>
+        {% endif %}
+
+        <span>{{ message }}</span>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+<!-- 27-3-26 -->
+</div>
+</div>
+
+
+<script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const sidebarTexts = document.querySelectorAll('.sidebar-text');
+
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    function openSidebarMobile() {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebarMobile() {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+toggleBtn.addEventListener('click', () => {
+        if (isMobile()) {
+            // 📱 Mobile behavior
+            if (sidebar.classList.contains('-translate-x-full')) {
+                openSidebarMobile();
+            } else {
+                closeSidebarMobile();
+            }
+        } else {
+
+            //DESKTOP COLLAPSE BEHAVIOR
+            if (sidebar.classList.contains('w-64')) {
+
+                // Collapse
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-20');
+
+                sidebar.classList.toggle('collapsed');
+            } else {
+
+                // Expand
+                sidebar.classList.remove('w-20');
+                sidebar.classList.add('w-64');
+
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+    });
+
+    //  Close when clicking outside (mobile only)
+    backdrop.addEventListener('click', closeSidebarMobile);
+
+    //  Auto close when clicking a link (mobile)
+    sidebar.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (isMobile()) {
+                closeSidebarMobile();
+            }
+        });
+    });
+
+    //  Reset sidebar state on resize
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            backdrop.classList.add('hidden');
+            sidebar.classList.remove('-translate-x-full');
+            document.body.classList.remove('overflow-hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+</script>
+
+<script>
+    document.getElementById("printReportBtn")?.addEventListener("click", function () {
+        window.print();
+    });
+</script>
+<script>
+    document.getElementById("adjustStockBtn")?.addEventListener("click", function () {
+        window.location.href = "{% url 'adjust_batch_stock' %}";
+    });
+    // --- Logout Flow ---
+        const logoutModal = document.getElementById('logout-modal');
+        const modalContent = document.getElementById('modal-content');
+        const logoutLoader = document.getElementById('logout-loader');
+        const logoutForm = document.getElementById('logout-form');
+
+        function openLogoutModal() {
+            logoutModal.classList.remove('hidden');
+            setTimeout(() => {
+                modalContent.classList.remove('scale-95', 'opacity-0');
+            }, 10);
+        }
+
+        function closeLogoutModal() {
+            modalContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                logoutModal.classList.add('hidden');
+            }, 300);
+        }
+
+        logoutForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeLogoutModal();
+            setTimeout(() => {
+                logoutLoader.classList.remove('hidden');
+                // Packing animation duration before final redirect
+                setTimeout(() => {
+                    this.submit();
+                }, 1600);
+            }, 300);
+        });
+</script>
+
+<script>
+    setTimeout(() => {
+        document.querySelectorAll('.auto-dismiss').forEach(alert => {
+            alert.classList.add('opacity-0', '-translate-y-2');
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 3000);
+</script>
+
+<script>
+    setTimeout(function () {
+        const alerts = document.querySelectorAll(".alert-message");
+        alerts.forEach(alert => {
+            alert.style.transition = "opacity 0.5s ease";
+            alert.style.opacity = "0";
+            setTimeout(() => alert.remove(), 500);
+        });
+    }, 4000);
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const toasts = document.querySelectorAll("#toast-container > div");
+
+    toasts.forEach((toast) => {
+        // optional smooth fade out
+        setTimeout(() => {
+            toast.style.transition = "all 0.3s ease";
+            toast.style.opacity = "0";
+            toast.style.transform = "translateY(-10px)";
+
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }, 3000); // 3 seconds
+    });
+});
+</script>
+</body>
+</html>

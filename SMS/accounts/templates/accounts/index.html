@@ -1,0 +1,1204 @@
+{% load static %}
+{% load humanize %}
+
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CWS Inventory | Modern Inventory Management</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            primary: '#5046e5', // Primary purple/blue
+                            primary_hover: '#4338ca',
+                            primary_light: '#e0e7ff',
+                            secondary: '#343090', // Top bar color
+                            dark_bg: '#0a0a32', // Deep navy for sections
+                            card_bg: '#1b1b4b', // Dark cards
+                            navy: '#1e1b4b',
+                            text_dark: '#0f172a',
+                            text_body: '#475569',
+                            bg_light: '#f4f6fa',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 10px 40px -10px rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; color: #475569; background-color: #ffffff; }
+        h1, h2, h3, h4, h5, h6 { color: #0f172a; }
+        .hero-bg {
+            background: radial-gradient(circle at top right, rgba(80, 70, 229, 0.05), transparent 40%),
+                        radial-gradient(circle at bottom center, rgba(80, 70, 229, 0.03), transparent 40%);
+        }
+        .cta-bg {
+            background: linear-gradient(135deg, #a78bfa 0%, #6366f1 50%, #4f46e5 100%);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden">
+
+    <!-- Preloader Overlay -->
+    <div id="netflix-preloader" class="fixed inset-0 z-[100000] bg-[#0b0a26] flex items-center justify-center overflow-hidden">
+        <img src="{% static 'accounts/images/screenshot_temp.png' %}" id="n-logo" class="h-12 md:h-20 object-contain opacity-0 transform scale-50" style="will-change: transform, opacity; filter: brightness(0) invert(1);">
+    </div>
+
+<!-- Top Bar -->
+<div class="bg-gradient-to-r from-[#5046E5] to-[#092A49] text-white">
+    <div class="max-w-[1440px] mx-auto 
+                px-2 sm:px-6 lg:px-8
+                min-h-[38px]
+                flex items-center justify-between
+                flex-nowrap overflow-hidden">
+
+        <!-- Left -->
+        <div class="flex items-center flex-nowrap min-w-0">
+
+            <!-- Timing -->
+            <div class="flex items-center px-1 sm:px-4 border-l border-white/15 whitespace-nowrap">
+                
+                <i class="fa-regular fa-clock text-[11px] sm:text-[13px] mr-1 sm:mr-2 shrink-0"></i>
+
+                <span class="text-[9px] xs:text-[10px] sm:text-[13px] font-medium whitespace-nowrap">
+                    10:00AM - 7:00PM
+                </span>
+
+                <!-- Divider -->
+                <span class="mx-1 sm:mx-2 h-3 sm:h-4 w-px bg-white/30 inline-block"></span>
+
+                <span class="text-[9px] xs:text-[10px] sm:text-[12px] text-white/80 whitespace-nowrap">
+                    Mon - Sat
+                </span>
+
+            </div>
+
+            <!-- Phone -->
+            <div class="flex items-center px-[2px] sm:px-4 border-l sm:border-r border-white/15 whitespace-nowrap">
+                
+                <i class="fa-solid fa-phone text-[9px] sm:text-[12px] mr-[2px] sm:mr-2 shrink-0"></i>
+
+                <span class="text-[9px] xs:text-[10px] sm:text-[13px] font-medium tracking-tight whitespace-nowrap">
+                    +91 93262 46981
+                </span>
+
+            </div>
+
+        </div>
+
+        <!-- Social Icons -->
+        <div class="flex items-center shrink-0 ml-1 sm:ml-auto">
+
+            <a href="#"
+               class="w-[28px] sm:w-[35px]
+                      h-[30px] sm:h-[35px]
+                      flex items-center justify-center
+                      border-l border-white/15
+                      hover:bg-white/10 transition-colors">
+                <i class="fa-brands fa-linkedin-in text-[12px] sm:text-[14px]"></i>
+            </a>
+
+            <a href="#"
+               class="w-[28px] sm:w-[35px]
+                      h-[30px] sm:h-[35px]
+                      flex items-center justify-center
+                      border-l border-r border-white/15
+                      hover:bg-white/10 transition-colors">
+                <i class="fa-brands fa-instagram text-[12px] sm:text-[14px]"></i>
+            </a>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- Header -->
+<header class="bg-white sticky top-0 z-50 w-full shadow-sm" id="navbar">
+    <div class="max-w-[1440px] mx-auto py-4 lg:py-[24px] px-4 lg:pl-[53px] lg:pr-[78px]">
+        <div class="flex justify-between items-center h-auto sm:h-[40px] lg:px-[46px]">
+            <div class="flex-shrink-0 flex items-center gap-[8px] cursor-pointer text-[#5046E5]">
+                <i class="fa-solid fa-box-archive text-[20px] sm:text-[22px]"></i>
+                <span class="font-bold text-[16px] sm:text-[18px] tracking-tight mt-0.5 whitespace-nowrap">CWS Inventory</span>
+            </div>
+            <div class="flex items-center gap-3 sm:gap-[16px]">
+                <div class="relative group flex items-center h-[40px]">
+                    <button class="text-[#4b5563] hover:text-brand-primary text-[13px] sm:text-[14px] font-medium transition flex items-center justify-center">
+                        Login
+                    </button>
+                    <div class="absolute right-0 top-full mt-2 w-48 sm:w-52 bg-white border border-gray-100 rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform origin-top-right translate-y-2 group-hover:translate-y-0 z-50">
+                        <div class="p-2 space-y-1">
+                            <a href="{% url 'admin_login' %}" class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-brand-primary_light hover:text-brand-primary rounded-lg transition-colors font-medium">
+                                <div class="w-8 h-8 rounded bg-brand-primary/10 flex items-center justify-center mr-3 text-brand-primary shrink-0"><i class="fa-solid fa-user-shield"></i></div>
+                                Admin Portal
+                            </a>
+                            <a href="{% url 'company_login' %}" class="flex items-center px-3 py-2 text-sm text-gray-700 hover:bg-brand-primary_light hover:text-brand-primary rounded-lg transition-colors font-medium">
+                                <div class="w-8 h-8 rounded bg-brand-primary/10 flex items-center justify-center mr-3 text-brand-primary shrink-0"><i class="fa-solid fa-store"></i></div>
+                                Business Portal
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                <a href="#pricing" class="bg-[#5046E5] hover:bg-[#4338ca] text-white flex items-center justify-center px-4 sm:px-[20px] py-2 sm:py-[10px] h-[36px] sm:h-[40px] rounded-[8px] text-[13px] sm:text-[14px] font-medium transition-colors whitespace-nowrap">Get Started</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- Hero Section -->
+<section class="relative bg-white overflow-hidden min-h-[auto] lg:min-h-[600px] pt-[60px] lg:pt-[118px] pb-[60px] lg:pb-[80px]">
+
+    <!-- Background Layer (Anchored to 1440px center to prevent separation on zoom out) -->
+    <div class="absolute inset-0 pointer-events-none z-10 w-full flex justify-center overflow-hidden lg:overflow-visible">
+        <div class="w-full max-w-[1440px] relative h-full">
+            <!-- Eclipse Arc -->
+            <img src="{% static 'accounts/images/Ellipse_1285.png' %}" 
+                 alt="" 
+                 class="absolute opacity-90 right-[-10%] sm:right-0 bottom-0 lg:bottom-auto lg:top-[42.66px] w-[180px] sm:w-[250px] lg:w-[351.99px] h-auto object-contain" 
+                 style="filter: drop-shadow(0px 4px 25.4px rgba(80, 70, 229, 0.31));">
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:pl-[100px] lg:pr-8 relative z-30">
+        <div class="flex flex-col lg:flex-row items-center lg:items-start lg:justify-between gap-10 lg:gap-8">
+            
+            <!-- Hero Text Content -->
+            <div class="w-full lg:max-w-[621.5px] z-20 shrink-0">
+                <!-- Top Label Pill -->
+                <span class="bg-[#E6E4FF] text-[#5046E5] text-[10px] sm:text-[11px] font-bold uppercase inline-flex items-center justify-center mb-6 px-4 py-1.5 rounded-full whitespace-nowrap">
+                    CWS INVENTORY SOLUTIONS
+                </span>
+                
+                <!-- Main Heading -->
+                <h1 class="mb-6 text-[#0E0A4E] font-semibold text-[36px] sm:text-[40px] lg:text-[48px] leading-[1.2] lg:leading-[59px] tracking-normal font-sans">
+                    Take Complete Control Of<br class="hidden sm:block">Your Inventory — <span class="text-[#5046E5]">Your<br class="hidden sm:block">Way</span>
+                </h1>
+                
+                <!-- Subheading -->
+                <p class="mb-8 font-normal text-[16px] lg:text-[18px] leading-[1.6] text-[#414751] max-w-full lg:max-w-[528.41px]">
+                    A powerful, fully customizable Inventory Management System that gives you real-time visibility, reduces losses, and streamlines operations across your entire business.
+                </p>
+                
+                <!-- Key Points Header -->
+                <div class="mb-4 font-bold text-[16px] lg:text-[18px] text-[#5046E5]">
+                    Key value points:
+                </div>
+                
+                <!-- Value List -->
+                <ul class="space-y-[8px] mb-10 text-[15px] lg:text-[18px] text-[#797979]">
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E6E4FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Real-time stock visibility across all operations</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E6E4FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Batch-wise and expiry tracking with automated alerts</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E6E4FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Flexible workflows tailored to your business</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E6E4FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Actionable insights with advanced reporting</span>
+                    </li>
+                </ul>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-col sm:flex-row gap-4 w-full">
+                    <a href="#pricing" class="bg-[#5046E5] hover:bg-[#4338ca] text-white flex items-center justify-center font-semibold transition-colors w-full sm:w-[191px] h-[55px] lg:h-[62px] rounded-[12px] text-[16px] lg:text-[18px]">
+                        Start Free Trial
+                    </a>
+                    <a href="#demo" class="bg-[#F0F3FF] hover:bg-[#e0e7ff] text-[#5046E5] flex items-center justify-center font-semibold transition-colors w-full sm:w-[180px] h-[55px] lg:h-[62px] rounded-[12px] border border-[#5046E5] text-[16px] lg:text-[18px]">
+                        Book a Demo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Dashboard Image -->
+            <div class="w-full lg:flex-1 relative z-20 mt-8 lg:mt-[40px] xl:mt-[60px] flex justify-center lg:justify-end pointer-events-auto">
+                <img src="{% static 'accounts/images/image_dash.png' %}" 
+                     alt="Company Dashboard" 
+                     class="w-full max-w-[600px] xl:max-w-[722.72px] h-auto bg-white rounded-[5px] border-[4px] lg:border-[7px] border-[#E5E7EB] shadow-[0px_4px_4px_rgba(0,0,0,0.25)] relative z-20">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Optimized For Your Industry -->
+<section class="py-[60px] lg:py-[96px] bg-[#F0F3FF]">
+    <div class="max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-[32px]">
+        <div class="flex flex-col items-center gap-[16px] mb-[35px] px-2">
+            <h2 class="text-[28px] lg:text-[32px] leading-[1.2] font-bold text-[#0E0A4E] text-center tracking-normal">Optimized For Your Industry</h2>
+            <p class="text-[16px] lg:text-[18px] leading-[24px] text-[#414751] text-center">Tailored workflows for specific business demands.</p>
+        </div>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-[24px]">
+            <!-- Retail -->
+            <div class="bg-white p-6 lg:p-[32px] rounded-[12px] shadow-sm hover:-translate-y-1 transition-transform flex flex-col">
+                <div class="w-12 h-12 rounded-xl bg-[#E0E7FF] flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-store text-xl text-[#5046E5] opacity-90"></i>
+                </div>
+                <h3 class="font-bold text-[#001C3A] text-[18px] lg:text-[20px] leading-tight mb-3">Retail</h3>
+                <p class="text-[14px] leading-relaxed text-[#414751]">Efficiently manage fast-moving inventory with real-time stock updates, automatic low-stock alerts, and seamless billing integration.</p>
+            </div>
+            <!-- Pharmacies -->
+            <div class="bg-white p-6 lg:p-[32px] rounded-[12px] shadow-sm hover:-translate-y-1 transition-transform flex flex-col">
+                <div class="w-12 h-12 rounded-xl bg-[#E0E7FF] flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-prescription-bottle-medical text-xl text-[#5046E5] opacity-90"></i>
+                </div>
+                <h3 class="font-bold text-[#001C3A] text-[18px] lg:text-[20px] leading-tight mb-3">Pharmacies</h3>
+                <p class="text-[14px] leading-relaxed text-[#414751]">Ensure compliance and safety with strict expiry tracking, batch-level visibility, and automatic near-expiry alerts. Prevent the sale of expired products.</p>
+            </div>
+            <!-- Warehouses -->
+            <div class="bg-white p-6 lg:p-[32px] rounded-[12px] shadow-sm hover:-translate-y-1 transition-transform flex flex-col">
+                <div class="w-12 h-12 rounded-xl bg-[#E0E7FF] flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-warehouse text-xl text-[#5046E5] opacity-90"></i>
+                </div>
+                <h3 class="font-bold text-[#001C3A] text-[18px] lg:text-[20px] leading-tight mb-3">Warehouses</h3>
+                <p class="text-[14px] leading-relaxed text-[#414751]">Handle high-volume inventory with structured stock movement, optimized storage tracking, and configurable workflows that align with your operational processes.</p>
+            </div>
+            <!-- Distributors -->
+            <div class="bg-white p-6 lg:p-[32px] rounded-[12px] shadow-sm hover:-translate-y-1 transition-transform flex flex-col">
+                <div class="w-12 h-12 rounded-xl bg-[#E0E7FF] flex items-center justify-center mb-4">
+                    <i class="fa-solid fa-network-wired text-xl text-[#5046E5] opacity-90"></i>
+                </div>
+                <h3 class="font-bold text-[#001C3A] text-[18px] lg:text-[20px] leading-tight mb-3">Distributors</h3>
+                <p class="text-[14px] leading-relaxed text-[#414751]">Prepare for scale with support for bulk operations, pricing rules, and advanced inventory logic designed for wholesale environments.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Challenges Section -->
+<section class="py-16 lg:py-20 bg-white">
+    <div class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col lg:flex-row gap-12 items-center">
+
+            <!-- LEFT CONTENT -->
+            <div class="w-full lg:w-1/2 max-w-[550px]">
+                <h2 class="text-[28px] lg:text-[32px] font-bold text-[#0E0A4E] leading-[1.3] mb-6">
+                    Inventory Challenges Are Slowing Down Your Business
+                </h2>
+                <div class="w-12 h-1 bg-brand-primary mb-8 rounded-full"></div>
+                <p class="text-[16px] lg:text-[18px] text-[#414751] leading-relaxed mb-8">
+                    Many businesses still rely on manual methods or disconnected systems to manage inventory. 
+                    This leads to inefficiencies, errors, and financial losses that can impact growth and 
+                    customer satisfaction.
+                </p>
+
+                <h4 class="font-bold text-brand-primary text-[16px] mb-6">Key value points:</h4>
+
+                <ul class="space-y-3 text-[15px] lg:text-[16px] text-[#414751]">
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Lack of real-time visibility into stock levels</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Overstocking leading to blocked capital</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Stockouts resulting in lost sales</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Expired products causing financial loss</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Manual tracking errors and inconsistencies</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Inefficient supplier and purchase management</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="w-2 h-2 bg-[#5046E5] rounded-full mt-[7px] shrink-0"></span>
+                        <span>Delayed reporting and lack of insights</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- RIGHT CONTENT -->
+            <!-- RIGHT CONTENT -->
+<div class="w-full lg:w-1/2 mt-10 lg:mt-0 flex flex-col items-center">
+
+    <!-- Styled Image Card -->
+    <div class="bg-[#F0F3FF] border border-indigo-200 rounded-2xl p-5 
+                w-full max-w-[620px] shadow-md transition-all duration-500 
+                hover:shadow-xl">
+
+        <img 
+            src="{% static 'accounts/images/image1.png' %}" 
+            alt="Warehouse Workers"
+            class="rounded-xl w-full h-[320px] object-cover 
+                   transition duration-500 hover:scale-105"
+        >
+
+        <!-- Caption -->
+        <p class="text-sm text-indigo-600 mt-4 border-l-4 border-indigo-500 pl-3 italic">
+            Operate faster, reduce errors, and make confident business decisions
+            backed by real-time data.
+        </p>
+    </div>
+
+    <!-- Callout Box -->
+    <div class="mt-6 bg-[#F0F3FF] p-6 rounded-xl border-l-4 border-indigo-500 
+                w-full max-w-[620px]">
+        <p class="text-sm lg:text-base font-medium text-indigo-600 italic leading-relaxed">
+            Without a centralized system, inventory becomes a liability instead of a strategic asset.
+        </p>
+    </div>
+
+</div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Centralized Platform -->
+<section class="bg-[#F0F3FF] py-20 px-6">
+
+    <div class="max-w-7xl mx-auto border border-blue-300 rounded-xl p-10 grid md:grid-cols-2 gap-12 items-center">
+
+        <!-- LEFT IMAGE -->
+        <div>
+            <img src="{% static 'accounts/images/inventory.png' %}"
+                 class="rounded-2xl shadow-xl w-full h-[320px] object-cover hover:scale-105 transition duration-500" />
+
+            <p class="text-xs text-blue-600 mt-4 border-l-4 border-blue-500 pl-3 italic">
+                Operate faster, reduce errors, and make confident business decisions
+                backed by real-time data.
+            </p>
+        </div>
+
+        <!-- RIGHT CONTENT -->
+        <div>
+            <h2 class="text-2xl md:text-3xl font-semibold text-gray-800 font-[Outfit] leading-snug">
+                A Centralized, Intelligent Inventory <br>
+                Management Platform
+            </h2>
+
+            <div class="w-14 h-1 bg-blue-500 my-4 rounded"></div>
+
+            <p class="text-sm md:text-base text-gray-600 mb-6 leading-relaxed">
+                Our Inventory Management System is designed to simplify and optimize every aspect of inventory management.
+                From procurement to sales, every process is streamlined and automated, giving you full control and visibility.
+            </p>
+
+            <h4 class="text-sm font-semibold text-blue-600 mb-3">
+                What makes it different:
+            </h4>
+
+            <ul class="space-y-3 text-sm text-gray-700">
+                <li class="flex gap-2"><span class="text-blue-500">•</span> Unified platform for all inventory operations</li>
+                <li class="flex gap-2"><span class="text-blue-500">•</span> Real-time synchronization across modules</li>
+                <li class="flex gap-2"><span class="text-blue-500">•</span> Intelligent alerts and automation</li>
+                <li class="flex gap-2"><span class="text-blue-500">•</span> Flexible architecture that adapts to your workflows</li>
+            </ul>
+        </div>
+
+    </div>
+
+    
+
+</section>
+
+<!-- Built Around Your Business -->
+<section class="py-16 lg:py-24 bg-brand-dark_bg">
+    <div class="max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+
+        <!-- HEADER -->
+        <div class="flex flex-col items-center text-center max-w-[805px] mx-auto mb-12 lg:mb-16">
+            <h2 class="text-[28px] lg:text-[32px] font-semibold text-white leading-tight max-w-[598px]">
+                Built Around Your Business — Fully Customizable
+            </h2>
+            <div class="w-[40px] h-[4px] bg-brand-primary rounded-full mt-[10px] mb-4"></div>
+            <p class="text-[16px] lg:text-[18px] font-normal text-[#F6F6F6] leading-relaxed w-full">
+                Every business works differently. Our system adapts to your processes,
+                giving you full flexibility without forcing changes to your workflow.
+            </p>
+        </div>
+
+        <!-- GRID -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/cubes.png' %}" alt="Modules" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">Modules & Features</h3>
+                   <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Enable only what you need, add custom fields</p>
+                </div>
+            </div>
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/workflow.png' %}" alt="Workflows" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">Workflows</h3>
+                   <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Configure approvals, stock movement, returns, and FEFO rules</p>
+                </div>
+            </div>
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/user-management.png' %}" alt="User Roles" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">User Roles</h3>
+                   <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Define roles, permissions, and access levels</p>
+                </div>
+            </div>
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/dashboard2.png' %}" alt="Reports" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">Reports & Dashboards</h3>
+                   <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Customize KPIs, reports, and views</p>
+                </div>
+            </div>
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/bell.png' %}" alt="Alerts" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">Alerts & Notifications</h3>
+                    <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Set thresholds and notification preferences</p>
+                </div>
+            </div>
+            <!-- CARD -->
+            <div class="bg-brand-card_bg p-6 lg:px-6 lg:py-8 min-h-[200px] lg:min-h-[228px] h-auto rounded-[12px] flex flex-col justify-center hover:-translate-y-1 transition duration-300">
+                <div class="w-[48px] h-[48px] bg-white rounded-lg flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/inventory-management.png' %}" alt="Inventory Rules" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold text-[18px] lg:text-[20px] leading-tight mb-2">Inventory Rules</h3>
+                    <p class="text-white/80 font-normal text-[15px] lg:text-[16px] leading-relaxed">Control stock limits, expiry settings, and restrictions</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CALLOUT -->
+        <div class="mt-12 flex justify-center">
+            <div class="bg-brand-card_bg rounded-[12px] p-6 max-w-[620px] w-full border-l-[4px] border-[#FFFFFF] flex items-center">
+                <p class="text-[#FFFFFF] font-medium italic text-[15px] lg:text-[16px] leading-relaxed text-left w-full">
+                    A flexible system that fits your business — not the other way around.
+                </p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<!-- Powerful Features Grid -->
+<section class="py-16 lg:py-[96px] bg-white">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[100px]">
+        
+        <div class="flex flex-col items-center text-center mb-12 mx-auto max-w-[598px]">
+            <h2 class="font-semibold text-[28px] lg:text-[32px] leading-tight text-[#0E0A4E]">
+                Powerful Features To Simplify<br class="hidden sm:block">Inventory Management
+            </h2>
+            <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mt-[10px]"></div>
+        </div>
+        
+        <div class="max-w-[1240px] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            
+            <!-- Items follow consistent responsive classes -->
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/inventory-management.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Inventory Management</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Gain complete visibility and control over your stock with real-time updates and automated tracking.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Track stock across all products instantly</li>
+                        <li>Record stock in (purchases, returns)</li>
+                        <li>Manage stock out (sales, damages, expiry)</li>
+                        <li>Set and monitor minimum stock levels</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/expiry.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Expiry & Batch Tracking</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Minimize losses and ensure compliance with advanced tracking capabilities.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Batch-level inventory management</li>
+                        <li>Expiry date tracking for each product</li>
+                        <li>Automatic near-expiry classification</li>
+                        <li>Prevent or restrict sale of expired items</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/fefo_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">FEFO Automation</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Ensure optimal stock utilization by prioritizing items nearing expiry.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Automatic FEFO enforcement</li>
+                        <li>Smart stock rotation</li>
+                        <li>Reduced wastage and improved efficiency</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/purchase_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Purchase Order Management</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Streamline procurement with structured workflows and approval systems.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Create and manage purchase orders</li>
+                        <li>Assign suppliers and track order status</li>
+                        <li>Approval workflows for validation</li>
+                        <li>Goods Receipt Note (GRN) management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/supplier_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Supplier Management</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Strengthen relationships and improve procurement efficiency.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Maintain detailed supplier profiles</li>
+                        <li>Track purchase history and performance</li>
+                        <li>Manage payment terms and agreements</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/sales_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Sales Integration (POS)</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Keep inventory updated with every sale automatically.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Automatic stock deduction during billing</li>
+                        <li>Manage returns and refunds</li>
+                        <li>Sync sales data with inventory</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/reports_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Reports & Analytics</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Make informed decisions with actionable, real-time insights.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Daily and monthly stock reports</li>
+                        <li>Fast and slow-moving product analysis</li>
+                        <li>Profit margin tracking</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/alerts_icon.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">Alerts & Notifications</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Stay proactive with real-time stock and expiry updates.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Low stock alerts</li>
+                        <li>Near-expiry notifications</li>
+                        <li>Dashboard and email alerts</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="bg-[#F0F3FF] rounded-[12px] p-6 min-h-[auto] lg:min-h-[344px] flex flex-col hover:shadow-sm transition-shadow">
+                <div class="w-[48px] h-[48px] bg-[#E5E4FF] rounded-[8px] flex items-center justify-center mb-5 shrink-0">
+                    <img src="{% static 'accounts/images/user-management.png' %}" alt="" class="w-[30px] h-[30px] object-contain">
+                </div>
+                <div>
+                    <h3 class="font-bold text-[18px] lg:text-[20px] text-[#5046E5] mb-2">User & Role Management</h3>
+                    <p class="font-normal text-[15px] lg:text-[16px] text-[#414751] mb-4">Ensure security and accountability with custom permissions.</p>
+                    <ul class="space-y-1 list-disc pl-5 opacity-80 text-[15px] lg:text-[16px] text-[#414751]">
+                        <li>Role-based access control</li>
+                        <li>User activity tracking</li>
+                        <li>Audit logs for compliance</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Designed For Growth and Expansion Section -->
+<section class="bg-[#0E0A4E] text-white py-20 px-6 relative overflow-hidden">
+
+    <!-- TOP LEFT MULTI RINGS -->
+    <!-- TOP LEFT MULTI RINGS WITH FILLED BAND -->
+<svg class="absolute"
+     style="top: -180px; left: -180px; transform: rotate(-88.44deg);"
+     width="436.35" height="436.35" viewBox="0 0 436.35 436.35" fill="none">
+
+    <defs>
+        <filter id="blur-soft" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="25" />
+        </filter>
+    </defs>
+
+    <!-- 🔥 FILLED RING (MAIN EFFECT) -->
+    <circle cx="218.175" cy="218.175" r="170"
+            stroke="#F0F3FF"
+            stroke-width="60"
+            stroke-opacity="0.08"
+            filter="url(#blur-soft)" />
+
+    <!-- Outer Thin Ring -->
+    <circle cx="218.175" cy="218.175" r="210"
+            stroke="#F0F3FF"
+            stroke-width="2"
+            stroke-opacity="0.1" />
+
+    <!-- Inner Thin Ring -->
+    <circle cx="218.175" cy="218.175" r="110"
+            stroke="#F0F3FF"
+            stroke-width="1.5"
+            stroke-opacity="0.15" />
+</svg>
+
+
+<!-- BOTTOM RIGHT SAME -->
+<svg class="absolute"
+     style="bottom: -180px; right: -180px; transform: rotate(-88.44deg);"
+     width="436.35" height="436.35" viewBox="0 0 436.35 436.35" fill="none">
+
+    <defs>
+        <filter id="blur-soft2" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="25" />
+        </filter>
+    </defs>
+
+    <!-- FILLED BAND -->
+    <circle cx="218.175" cy="218.175" r="170"
+            stroke="#F0F3FF"
+            stroke-width="60"
+            stroke-opacity="0.08"
+            filter="url(#blur-soft2)" />
+
+    <!-- Outer Ring -->
+    <circle cx="218.175" cy="218.175" r="210"
+            stroke="#F0F3FF"
+            stroke-width="2"
+            stroke-opacity="0.1" />
+
+    <!-- Inner Ring -->
+    <circle cx="218.175" cy="218.175" r="110"
+            stroke="#F0F3FF"
+            stroke-width="1.5"
+            stroke-opacity="0.15" />
+</svg>
+
+    <!-- MAIN CONTENT -->
+    <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
+
+        <!-- LEFT IMAGE -->
+        <div>
+            <img src="{% static 'accounts/images/requirment.png' %}"
+                 class="rounded-2xl w-full h-[340px] object-cover hover:scale-105 transition duration-500"
+                 style="box-shadow: 0px 4px 35.4px rgba(80, 70, 229, 0.31);" />
+        </div>
+
+        <!-- RIGHT CONTENT -->
+        <div>
+            <h2 style="font-family: 'Inter', sans-serif; font-weight: 600; font-size: 32px; line-height: 46px; color: #EEEEEE;" class="mb-[10px]">
+                    Designed For Growth and Expansion
+                </h2>
+
+            <div class="w-14 h-1 bg-indigo-400 my-4 rounded"></div>
+
+            <p class="text-sm md:text-base text-gray-300 mb-6 leading-relaxed">
+                Our platform is built with scalability in mind, ensuring it evolves alongside your business needs.
+            </p>
+
+            <h4 class="text-sm font-semibold text-indigo-300 mb-3">
+                Planned Enhancements:
+            </h4>
+
+            <ul class="space-y-3 text-sm text-gray-300">
+                <li class="flex gap-2"><span class="text-indigo-400">•</span> Mobile applications for on-the-go operations</li>
+                <li class="flex gap-2"><span class="text-indigo-400">•</span> Wholesale management with bulk pricing</li>
+                <li class="flex gap-2"><span class="text-indigo-400">•</span> Multi-warehouse and multi-location support</li>
+                <li class="flex gap-2"><span class="text-indigo-400">•</span> Advanced analytics and demand forecasting</li>
+                <li class="flex gap-2"><span class="text-indigo-400">•</span> Integration with ERP and third-party systems</li>
+            </ul>
+        </div>
+
+    </div>
+
+</section>
+
+<!-- How It Works Flow -->
+<section class="py-16 lg:py-[96px] bg-white border-b border-gray-100 overflow-hidden">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[100px] text-center">
+        
+        <div class="flex flex-col items-center text-center mb-12 lg:mb-[80px] mx-auto max-w-[598px]">
+            <h2 class="font-semibold text-[28px] lg:text-[32px] leading-tight text-[#0E0A4E]">How It Works</h2>
+            <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mt-[10px]"></div>
+        </div>
+        
+        <div class="flex flex-col lg:flex-row justify-between items-center lg:items-start mx-auto relative gap-10 lg:gap-8 max-w-[1182px]">
+            
+            <!-- Step 1 -->
+            <div class="flex-1 flex flex-col items-center relative group w-full max-w-[250px] lg:max-w-[196px]">
+                <div class="hidden lg:block absolute top-[27px] left-[calc(50%+40px)] w-[calc(100%-30px)] z-0 opacity-40">
+                    <div class="w-full border-t-[2px] border-dashed border-[#5046E5]" style="border-dasharray: 5 5;"></div>
+                    <div class="absolute right-0 top-[-4px] w-[8px] h-[8px] border-t-[2px] border-r-[2px] border-[#5046E5] rotate-45"></div>
+                </div>
+                <div class="flex items-center justify-center bg-[#F0F3FF] text-[#5046E5] font-bold text-[18px] mb-[24px] relative z-10 w-[54px] h-[54px] rounded-[6px]">1</div>
+                <h4 class="font-semibold text-[18px] leading-tight text-[#5046E5] mb-[10px] text-center">Setup Your<br class="hidden lg:block">Inventory</h4>
+                <p class="font-normal text-[14px] leading-relaxed text-[#414751] max-w-[175px] text-center">Add products, categories, and suppliers into the system.</p>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="flex-1 flex flex-col items-center relative group w-full max-w-[250px] lg:max-w-[196px]">
+                <div class="hidden lg:block absolute top-[27px] left-[calc(50%+40px)] w-[calc(100%-30px)] z-0 opacity-40">
+                    <div class="w-full border-t-[2px] border-dashed border-[#5046E5]" style="border-dasharray: 5 5;"></div>
+                    <div class="absolute right-0 top-[-4px] w-[8px] h-[8px] border-t-[2px] border-r-[2px] border-[#5046E5] rotate-45"></div>
+                </div>
+                <div class="flex items-center justify-center bg-[#F0F3FF] text-[#5046E5] font-bold text-[18px] mb-[24px] relative z-10 w-[54px] h-[54px] rounded-[6px]">2</div>
+                <h4 class="font-semibold text-[18px] leading-tight text-[#5046E5] mb-[10px] text-center">Manage<br class="hidden lg:block">Procurement</h4>
+                <p class="font-normal text-[14px] leading-relaxed text-[#414751] max-w-[175px] text-center">Create purchase orders and receive stock with GRN.</p>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="flex-1 flex flex-col items-center relative group w-full max-w-[250px] lg:max-w-[196px]">
+                <div class="hidden lg:block absolute top-[27px] left-[calc(50%+40px)] w-[calc(100%-30px)] z-0 opacity-40">
+                    <div class="w-full border-t-[2px] border-dashed border-[#5046E5]" style="border-dasharray: 5 5;"></div>
+                    <div class="absolute right-0 top-[-4px] w-[8px] h-[8px] border-t-[2px] border-r-[2px] border-[#5046E5] rotate-45"></div>
+                </div>
+                <div class="flex items-center justify-center bg-[#F0F3FF] text-[#5046E5] font-bold text-[18px] mb-[24px] relative z-10 w-[54px] h-[54px] rounded-[6px]">3</div>
+                <h4 class="font-semibold text-[18px] leading-tight text-[#5046E5] mb-[10px] text-center">Track Stock<br class="hidden lg:block">Movements</h4>
+                <p class="font-normal text-[14px] leading-relaxed text-[#414751] max-w-[175px] text-center">Monitor stock in and stock out in real time.</p>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="flex-1 flex flex-col items-center relative group w-full max-w-[250px] lg:max-w-[196px]">
+                <div class="hidden lg:block absolute top-[27px] left-[calc(50%+40px)] w-[calc(100%-30px)] z-0 opacity-40">
+                    <div class="w-full border-t-[2px] border-dashed border-[#5046E5]" style="border-dasharray: 5 5;"></div>
+                    <div class="absolute right-0 top-[-4px] w-[8px] h-[8px] border-t-[2px] border-r-[2px] border-[#5046E5] rotate-45"></div>
+                </div>
+                <div class="flex items-center justify-center bg-[#F0F3FF] text-[#5046E5] font-bold text-[18px] mb-[24px] relative z-10 w-[54px] h-[54px] rounded-[6px]">4</div>
+                <h4 class="font-semibold text-[18px] leading-tight text-[#5046E5] mb-[10px] text-center">Sell with<br class="hidden lg:block">Confidence</h4>
+                <p class="font-normal text-[14px] leading-relaxed text-[#414751] max-w-[175px] text-center">Integrate with POS for automatic stock updates.</p>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="flex-1 flex flex-col items-center relative w-full max-w-[250px] lg:max-w-[196px]">
+                <div class="flex items-center justify-center bg-[#F0F3FF] text-[#5046E5] font-bold text-[18px] mb-[24px] relative z-10 w-[54px] h-[54px] rounded-[6px]">5</div>
+                <h4 class="font-semibold text-[18px] leading-tight text-[#5046E5] mb-[10px] text-center">Analyze &<br class="hidden lg:block">Optimize</h4>
+                <p class="font-normal text-[14px] leading-relaxed text-[#414751] max-w-[175px] text-center">Use reports and alerts to make better decisions.</p>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+<!-- Transform The Way -->
+<section class="py-16 lg:py-24 bg-[#F0F3FF]">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:pl-[100px] lg:pr-8">
+        <div class="flex flex-col lg:flex-row items-center justify-between gap-12 lg:gap-[46px]">
+            <!-- Content -->
+            <div class="w-full lg:max-w-[598px] order-2 lg:order-1">
+                <h2 class="font-semibold text-[28px] lg:text-[32px] leading-tight text-[#0E0A4E] mb-3">
+                    Transform The Way You Manage<br class="hidden sm:block">Inventory
+                </h2>
+                <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mb-8"></div>
+                <h4 class="font-semibold text-[16px] text-[#0E0A4E] mb-6">Benefits</h4>
+                
+                <ul class="space-y-[8px] text-[15px] lg:text-[18px] text-[#414751]">
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Eliminate manual errors and inefficiencies</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Reduce losses due to expired or unsold stock</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Improve stock accuracy and visibility</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Save time with automated processes</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Enhance decision-making with real-time insights</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Increase operational efficiency and productivity</span>
+                    </li>
+                    <li class="flex items-start lg:items-center min-h-[30px] h-auto py-1 lg:py-0">
+                        <div class="w-[8.42px] h-[8.42px] rounded-full bg-[#5046E5] ring-[3px] ring-[#E0E7FF] shrink-0 mr-4 ml-[2.79px] mt-1.5 lg:mt-0"></div>
+                        <span>Scale your business without changing systems</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Image -->
+            <div class="w-full lg:max-w-[561px] order-1 lg:order-2">
+    <img src="{% static 'accounts/images/image3.png' %}" 
+         alt="Inventory Transformation Analytics" 
+         class="w-full h-auto rounded-[24px] shadow-sm object-cover aspect-[561/387] 
+                transition-transform duration-500 hover:scale-105">
+</div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section id="pricing" class="py-16 lg:py-24 bg-white">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-[100px]">
+        
+        <div class="text-center mb-12 lg:mb-16 flex flex-col items-center">
+            <h2 class="font-semibold text-[28px] lg:text-[40px] leading-tight text-[#0E0A4E] mb-2">
+                Flexible Pricing That Grows With You
+            </h2>
+            <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mb-6"></div>
+            <p class="font-normal text-[16px] lg:text-[18px] leading-relaxed text-[#414751] max-w-[800px] px-2">
+                Our pricing is designed to suit businesses of all sizes, with options for customization based on your specific requirements.
+            </p>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-[1200px] mx-auto items-stretch mb-[48px]">
+            
+            <!-- Starter -->
+            <div class="bg-[#F9FAFB] p-8 rounded-[20px] border border-[#E5E7EB] flex flex-col 
+                        transition-all duration-500 hover:shadow-xl hover:-translate-y-2 
+                        w-full max-w-[400px] lg:max-w-[350px] mx-auto">
+                <h3 class="font-semibold text-[20px] text-[#0E0A4E] mb-4">Starter</h3>
+                <div class="mb-6">
+                    <span class="font-semibold text-[32px] lg:text-[36px] text-[#0E0A4E]">Rs.499</span>
+                    <span class="font-normal text-[14px] text-[#71717A]">/mo</span>
+                </div>
+                <p class="font-normal text-[14px] leading-relaxed text-[#71717A] mb-8 min-h-[48px]">
+                    Ideal for small retail stores or boutique warehouses.
+                </p>
+                <ul class="space-y-4 mb-[40px] flex-grow">
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Up to 500 SKUs
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> 3 User Accounts
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Basic Expiry Alerts
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Single Warehouse
+                    </li>
+                </ul>
+                <button class="w-full h-[50px] rounded-[8px] font-semibold text-[16px] bg-white text-[#5046E5] border border-[#5046E5] hover:bg-gray-50 transition-colors">
+                    Select Plan
+                </button>
+            </div>
+
+            <!-- Business -->
+            <div class="bg-[#0E0A4E] p-8 rounded-[20px] shadow-2xl relative flex flex-col 
+                        transform lg:-translate-y-4 transition-all duration-500 
+                        hover:-translate-y-6 hover:shadow-2xl 
+                        border border-white/5 w-full max-w-[400px] lg:max-w-[350px] mx-auto">
+                <div class="absolute top-0 right-6 bg-[#5046E5] text-white text-[10px] font-bold px-3 py-1 rounded-b-md uppercase tracking-wider">
+                    Most Popular
+                </div>
+                <h3 class="font-semibold text-[20px] text-[#FFFFFF] mb-4">Business</h3>
+                <div class="mb-6">
+                    <span class="font-semibold text-[32px] lg:text-[36px] text-[#FFFFFF]">Rs.1299</span>
+                    <span class="font-normal text-[14px] text-[#94A3B8]">/mo</span>
+                </div>
+                <p class="font-normal text-[14px] leading-relaxed text-[#94A3B8] mb-8 min-h-[48px]">
+                    Comprehensive solution for growing distributors.
+                </p>
+                <ul class="space-y-4 mb-[40px] flex-grow">
+                    <li class="flex items-center gap-3 text-sm text-[#E2E8F0]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Unlimited SKUs
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#E2E8F0]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> 20 User Accounts
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#E2E8F0]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Full FEFO Automation
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#E2E8F0]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Multi-Warehouse Support
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#E2E8F0]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Advanced API Access
+                    </li>
+                </ul>
+                <button class="w-full h-[50px] rounded-[8px] font-semibold text-[16px] bg-[#5046E5] text-white hover:bg-[#4338ca] transition-colors shadow-md">
+                    Get Started
+                </button>
+            </div>
+
+            <!-- Enterprise -->
+            <div class="bg-[#F9FAFB] p-8 rounded-[20px] border border-[#E5E7EB] flex flex-col 
+                        transition-all duration-500 hover:shadow-xl hover:-translate-y-2 
+                        w-full max-w-[400px] lg:max-w-[350px] mx-auto">
+                <h3 class="font-semibold text-[20px] text-[#0E0A4E] mb-4">Enterprise</h3>
+                <div class="mb-6">
+                    <span class="font-semibold text-[32px] lg:text-[36px] text-[#0E0A4E]">Custom</span>
+                </div>
+                <p class="font-normal text-[14px] leading-relaxed text-[#71717A] mb-8 min-h-[48px]">
+                    Bespoke workflows for global corporations.
+                </p>
+                <ul class="space-y-4 mb-[40px] flex-grow">
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Tailored Custom Modules
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Unlimited Locations
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> Dedicated Success Manager
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-[#414751]">
+                        <i class="fa-solid fa-check text-[#5046E5] font-bold"></i> 24/7 Priority Support
+                    </li>
+                </ul>
+                <button class="w-full h-[50px] rounded-[8px] font-semibold text-[16px] bg-white text-[#5046E5] border border-[#5046E5] hover:bg-gray-50 transition-colors">
+                    Contact Sales
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom CTA -->
+        <div class="max-w-[1188px] mx-auto bg-[#F0F3FF] border-l-[4px] border-[#5046E5] rounded-[12px] p-6 flex flex-col md:flex-row justify-between items-center gap-6 shadow-sm text-center md:text-left">
+            <p class="font-normal text-[15px] lg:text-[16px] text-[#5046E5] italic">
+                Pricing varies based on modules, users, and customization requirements.
+            </p>
+            <button class="w-full md:w-[166px] h-[50px] rounded-[8px] font-semibold text-[16px] bg-[#5046E5] text-white hover:bg-[#4338ca] transition-colors shadow-sm shrink-0">
+                Contact Us
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Bottom CTA Section -->
+<section class="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 mb-16 lg:mb-24">
+    <div class="mx-auto rounded-[30px] border border-[#E5E7EB] shadow-md overflow-hidden relative flex flex-col items-center justify-center text-center p-8 sm:p-12 md:p-16 w-full max-w-[1243px] min-h-[400px] lg:min-h-[508px]" 
+        style="background-image: url('{% static "accounts/images/background_greding.png" %}'); background-repeat: no-repeat; background-position: center; background-size: cover;"
+        
+        <div class="relative z-10 w-full flex flex-col items-center">
+            <h2 class="font-semibold text-[32px] sm:text-[36px] lg:text-[40px] leading-tight text-[#0E0A4E] max-w-[598px] mb-4">
+                Start Managing Your Inventory The Smart Way
+            </h2>
+            
+            <p class="font-normal text-[16px] lg:text-[18px] leading-relaxed text-[#414751] max-w-[727px] mb-8 lg:mb-12">
+                Gain full control, reduce losses, and streamline your operations with a system built for your business.
+            </p>
+            
+            <div class="flex flex-col sm:flex-row justify-center gap-[13px] mb-10 w-full">
+                <a href="#" class="bg-[#5046E5] hover:bg-[#4338ca] text-white flex items-center justify-center transition-all shadow-sm w-full sm:w-[166px] h-[50px] rounded-[8px] font-semibold text-[16px]">
+                    Start Free Trial
+                </a>
+                <a href="#" class="bg-white hover:bg-gray-50 text-[#5046E5] border border-[#5046E5] flex items-center justify-center transition-all shadow-sm w-full sm:w-[166px] h-[50px] rounded-[8px] font-semibold text-[16px]">
+                    Book a Demo
+                </a>
+            </div>
+            
+            <div class="flex items-center justify-center bg-[#F0F3FF] border-l-[4px] border-[#5046E5] shadow-sm w-full max-w-[657px] min-h-[49px] h-auto py-3 px-4 lg:px-6 rounded-[12px]">
+                <p class="font-normal text-[14px] lg:text-[16px] leading-relaxed text-[#5046E5] italic">
+                    No more guesswork. No more manual errors. Just complete control.
+                </p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer Section -->
+<footer class="bg-[#0E0A4E] text-white pt-[60px] pb-[40px]">
+    <div class="max-w-[1320px] mx-auto px-6 lg:px-[60px]">
+        <div class="flex flex-col md:flex-row flex-wrap justify-between items-start gap-12 lg:gap-8 mb-[60px] lg:mb-[80px]">
+            
+            <!-- Column 1: Company Info -->
+            <div class="w-full md:w-[45%] lg:w-[330px]">
+                <div class="mb-8">
+                    <img src="{% static 'accounts/images/screenshot_temp.png' %}" alt="Creative Web Solution" class="h-[40px] lg:h-[46px] object-contain" style="filter: brightness(0) invert(1);" />
+                </div>
+                <ul class="space-y-4">
+                    <li class="flex items-start gap-[12px]">
+                        <i class="fa-solid fa-location-dot text-[#5046E5] text-[16px] mt-1 shrink-0"></i>
+                        <span class="font-sans text-[14px] leading-relaxed text-[#FFFFFF]">
+                            LWT, 203, C/O, ITI RD, above PNG,<br>near Parihar Chowk, Aundh,<br>Maharashtra 411007
+                        </span>
+                    </li>
+                    <li class="flex items-center gap-[12px]">
+                        <i class="fa-solid fa-phone text-[#5046E5] text-[16px] shrink-0"></i>
+                        <span class="font-sans text-[14px] leading-relaxed text-[#FFFFFF]">+91 93262 46981</span>
+                    </li>
+                    <li class="flex items-center gap-[12px]">
+                        <i class="fa-solid fa-envelope text-[#5046E5] text-[16px] shrink-0"></i>
+                        <span class="font-sans text-[14px] leading-relaxed text-[#FFFFFF] break-all">info@creativewebsolution.in</span>
+                    </li>
+                    <li class="flex items-center gap-[12px]">
+                        <i class="fa-solid fa-globe text-[#5046E5] text-[16px] shrink-0"></i>
+                        <span class="font-sans text-[14px] leading-relaxed text-[#FFFFFF] break-all">www.creativewebsolution.in</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Column 2: Links -->
+            <div class="w-full md:w-[45%] lg:w-[188px]">
+                <h4 class="font-semibold text-[16px] leading-[32px] tracking-[1px] text-[#FFFFFF] mb-1">Links</h4>
+                <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mb-6"></div>
+                
+                <ul class="space-y-[12px]">
+                    <li>
+                        <a href="#" class="flex items-center group">
+                            <i class="fa-solid fa-chevron-right text-[#5046E5] text-[12px] mr-3"></i>
+                            <span class="font-sans text-[14px] leading-relaxed group-hover:text-[#5046E5] transition-colors">Contact Us</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center group">
+                            <i class="fa-solid fa-chevron-right text-[#5046E5] text-[12px] mr-3"></i>
+                            <span class="font-sans text-[14px] leading-relaxed group-hover:text-[#5046E5] transition-colors">Privacy Policy</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" class="flex items-center group">
+                            <i class="fa-solid fa-chevron-right text-[#5046E5] text-[12px] mr-3"></i>
+                            <span class="font-sans text-[14px] leading-relaxed group-hover:text-[#5046E5] transition-colors">Terms of Use</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Column 3: Social Media -->
+            <div class="w-full md:w-[45%] lg:w-[200px]">
+                <h4 class="font-semibold text-[16px] leading-[32px] tracking-[1px] text-[#FFFFFF] mb-1">Social Media</h4>
+                <div class="w-[40px] h-[4px] bg-[#5046E5] rounded-full mb-6"></div>
+                
+                <div class="flex items-center gap-[8px]">
+                    <a href="#" class="w-[42px] h-[42px] bg-[#25D366] rounded-[6px] flex items-center justify-center transition-transform hover:scale-110 overflow-hidden">
+                        <img src="{% static 'accounts/images/whatsapp_icon.png' %}" alt="WhatsApp" class="w-[32px] h-[32px] object-contain">
+                    </a>
+                    <a href="#" class="w-[42px] h-[42px] bg-[#1877F2] rounded-[6px] flex items-center justify-center transition-transform hover:scale-110 overflow-hidden">
+                        <img src="{% static 'accounts/images/facebook_icon.png' %}" alt="Facebook" class="w-[32px] h-[32px] object-contain">
+                    </a>
+                    <a href="#" class="w-[42px] h-[42px] bg-gradient-to-tr from-[#F58529] via-[#D62976] to-[#8134AF] rounded-[6px] flex items-center justify-center transition-transform hover:scale-110 overflow-hidden">
+                        <img src="{% static 'accounts/images/instagram_icon.png' %}" alt="Instagram" class="w-[32px] h-[32px] object-contain">
+                    </a>
+                    <a href="#" class="w-[42px] h-[42px] bg-[#0077B5] rounded-[6px] flex items-center justify-center transition-transform hover:scale-110 overflow-hidden">
+                        <img src="{% static 'accounts/images/linkedin_icon.png' %}" alt="LinkedIn" class="w-[32px] h-[32px] object-contain">
+                    </a>
+                </div>
+            </div>
+
+            <!-- Column 4: Illustration (Right aligned / Responsive) -->
+            <div class="w-full md:w-[45%] lg:w-[300px] flex justify-center md:justify-start lg:justify-end mt-4 lg:mt-0">
+                <img src="{% static 'accounts/images/last.png' %}" 
+                     alt="Illustration" 
+                     class="w-[200px] sm:w-[250px] lg:w-full h-auto object-contain opacity-90" />
+            </div>
+
+        </div>
+
+        <div class="pt-8 border-t border-white/10">
+            <p class="font-sans font-normal text-[14px] lg:text-[16px] leading-relaxed text-[#999999] text-center md:text-left">
+                Copyright © 2025 - 2026 CWS Inventory. ALL RIGHTS RESERVED
+            </p>
+        </div>
+    </div>
+</footer>
+
+    <!-- Scripts -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const preloader = document.getElementById('netflix-preloader');
+            const nLogo = document.getElementById('n-logo');
+            
+            if (preloader && nLogo) {
+                document.body.style.overflow = 'hidden';
+                window.scrollTo(0, 0);
+                
+                setTimeout(() => {
+                    nLogo.style.transition = 'opacity 0.8s ease-out, transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+                    nLogo.style.opacity = '1';
+                    nLogo.style.transform = 'scale(1.2)';
+                }, 100);
+
+                setTimeout(() => {
+                    nLogo.style.transition = 'opacity 0.6s ease-in, transform 0.8s cubic-bezier(0.8, 0, 0.2, 1)';
+                    nLogo.style.transform = 'scale(40)';
+                    nLogo.style.opacity = '0';
+                    
+                    preloader.style.transition = 'opacity 0.8s ease-in-out';
+                    preloader.style.opacity = '0';
+                }, 1600);
+
+                setTimeout(() => {
+                    preloader.remove();
+                    document.body.style.overflow = '';
+                }, 2400);
+            }
+
+            const navbar = document.getElementById('navbar');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 40) {
+                    navbar.classList.add('shadow-md');
+                } else {
+                    navbar.classList.remove('shadow-md');
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

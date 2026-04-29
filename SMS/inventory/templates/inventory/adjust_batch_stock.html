@@ -1,0 +1,992 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ company.name }} | Adjust Batch Stock</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <!-- Tailwind -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+        }
+        
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 4px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 10px; 
+        }
+        .active-nav { 
+            background: #4f46e5; 
+            color: white; 
+        }
+        
+        @media (max-width: 640px) {
+            .flex.flex-col.sm\:flex-row {
+                flex-direction: row;    
+                justify-content: flex-end;
+                gap: 8px;
+            }
+
+            .flex.flex-col.sm\:flex-row button,
+            .flex.flex-col.sm\:flex-row a {
+                padding: 10px 14px;      
+                font-size: 13px;
+                white-space: nowrap;     
+            }
+        }
+
+        .field-error {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+            ring-color: #ef4444 !important;
+        }
+        
+        .error-text {
+            color: #dc2626;
+            font-size: 0.75rem;
+            margin-top: 0.25rem;
+            font-weight: 500;
+        }
+
+        select:disabled {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+        }
+
+        /* Custom Dropdown Adjustments to bypass Chrome zoom bug */
+        .custom-dropdown-open .dropdown-btn {
+            border-color: #4f46e5 !important;
+            box-shadow: 0 0 0 4px rgb(79 70 229 / 10%) !important;
+        }
+        .custom-dropdown-open .dropdown-icon {
+            transform: rotate(180deg);
+        }
+
+        /* Loader Animation */
+        .box-loader {
+            width: 80px;
+            height: 80px;
+            background: #4f46e5;
+            position: relative;
+            animation: box-bounce 1s infinite ease-in-out;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .box-loader::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: #3730a3;
+            transform: translateY(-50%);
+        }
+
+        .box-loader::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 4px;
+            height: 100%;
+            background: #3730a3;
+            transform: translateX(-50%);
+        }
+
+        @keyframes box-bounce {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-35px) rotate(8deg); }
+        }
+
+        .conveyor-belt {
+            width: 140px;
+            height: 6px;
+            background: #e2e8f0;
+            margin-top: 15px;
+            border-radius: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .conveyor-belt::after {
+            content: '';
+            position: absolute;
+            width: 50px;
+            height: 100%;
+            background: #4f46e5;
+            animation: conveyor-move 0.8s infinite linear;
+        }
+
+        @keyframes conveyor-move {
+            from { left: -50px; }
+            to { left: 140px; }
+        }
+
+        #sidebar.collapsed {
+            width: 5rem;
+        }
+
+        #sidebar.collapsed .sidebar-text {
+            display: none;
+        }
+
+        #sidebar.collapsed nav a {
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-hidden w-full max-w-full">
+    <!-- LOGOUT MODAL -->
+    <div id="logout-modal"
+        class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+
+        <div id="modal-content"
+            class="bg-white rounded-[2rem] p-10 max-w-sm w-full mx-4 shadow-2xl
+                   transform transition-all scale-95 opacity-0 duration-300
+                   border border-slate-100">
+
+            <!-- Icon -->
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+
+            <!-- Title -->
+            <h3 class="text-3xl font-bold text-slate-900 text-center">
+                Ready to go?
+            </h3>
+
+            <!-- Description -->
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">
+                Confirm to sign out of your portal. We'll make sure your session is closed securely.
+            </p>
+
+            <!-- Buttons -->
+            <div class="flex flex-col gap-3">
+
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit"
+                        class="w-full px-6 py-4
+                               bg-gradient-to-r from-indigo-600 to-indigo-500
+                               text-white font-bold rounded-2xl
+                               hover:from-indigo-700 hover:to-indigo-600
+                               shadow-xl shadow-indigo-100
+                               transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+
+                <button onclick="closeLogoutModal()"
+                    class="w-full px-6 py-4
+                           bg-slate-100 text-slate-600 font-bold
+                           rounded-2xl hover:bg-slate-200
+                           transition-all">
+                    Stay here
+                </button>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- LOGOUT LOADER -->
+    <div id="logout-loader"
+        class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+
+        <div class="box-loader"></div>
+        <div class="conveyor-belt"></div>
+
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">
+            Packing your workspace...
+        </h3>
+        <p class="text-slate-400 font-medium mt-2">
+            Saving progress and signing out safely.
+        </p>
+    </div>
+
+    {% if messages %}
+    <div id="toast-container"
+         class="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-full max-w-md px-4">
+
+        {% for message in messages %}
+        <div class="toast-item
+            px-4 py-3 rounded-xl shadow-lg flex items-center gap-2
+            {% if message.tags == 'success' %}
+                bg-emerald-100 text-emerald-700
+            {% elif message.tags == 'error' %}
+                bg-rose-100 text-rose-700
+            {% endif %}
+        ">
+            {% if message.tags == 'success' %}
+                <i data-lucide="check-circle" class="w-5 h-5"></i>
+            {% elif message.tags == 'error' %}
+                <i data-lucide="alert-circle" class="w-5 h-5"></i>
+            {% endif %}
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+
+    <!-- Mobile Overlay -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 z-40 hidden"></div>
+
+    <div class="flex h-screen overflow-hidden w-full max-w-full">
+
+        <!-- Sidebar -->
+        <aside id="sidebar" class="fixed md:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 transform -translate-x-full md:translate-x-0 transition-all duration-300">
+            <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+                <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                    <i data-lucide="building-2" class="w-6 h-6"></i>
+                </div>
+                <div class="overflow-hidden sidebar-text">
+                    <h1 class="font-bold text-lg truncate">{{ company.name|default:"Company" }}</h1>
+                    <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Enterprise</p>
+                </div>
+            </div>
+                                                        <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-slate-100">
+                <button onclick="openLogoutModal()" class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg">
+                    <i data-lucide="log-out" class="w-5 h-5"></i><span class="sidebar-text">Logout</span></button>
+            </div>
+        </aside>
+
+        <!-- Main -->
+        <main class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto w-full max-w-full">
+
+            <!-- Header -->
+            <header class="h-16 bg-white border-b flex items-center justify-between px-4 sm:px-6 md:px-8">
+
+                <!-- Left section -->
+                <div class="flex items-center gap-4 min-w-0">
+                    <button id="toggle-sidebar" class="p-2 rounded-lg hover:bg-slate-100 text-slate-500">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+
+                    <!-- Breadcrumb -->
+                    <div class="flex items-center gap-2 text-xs sm:text-sm text-slate-500 overflow-hidden whitespace-nowrap">
+                        <a href="/company/dashboard/" class="hover:text-indigo-600 font-medium truncate">
+                            Dashboard
+                        </a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 shrink-0"></i>
+                        <a href="{% url 'batch_stock_list' %}" class="hover:text-indigo-600 font-medium truncate">
+                            Batch Stock
+                        </a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 shrink-0"></i>
+                        <span class="text-slate-800 font-semibold truncate">
+                            Adjust Batch Stock
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Profile -->
+                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center font-bold shrink-0 ml-4">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+            </header>
+
+            <!-- Content -->
+            <div class="flex-1 p-4 sm:p-6 md:p-8 w-full max-w-full">
+
+                <!-- Breadcrumb + Title Section -->
+                <div class="mb-6 w-full max-w-full">
+                    <!-- Title + Back Button -->
+                    <div class="w-full max-w-3xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div>
+                            <h1 class="text-2xl font-black tracking-tight text-slate-900">
+                                Adjust Batch Stock
+                            </h1>
+                            <p class="text-slate-500 text-sm mt-1">
+                                Increase or decrease stock for a specific batch.
+                            </p>
+                        </div>
+
+                        <!-- Back Button -->
+                        <a href="{% url 'batch_stock_list' %}"
+                           class="flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-indigo-600 transition-colors uppercase tracking-wider shrink-0">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Back to Batch Stock</span>
+                            <span class="sm:hidden">Back</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="w-full max-w-3xl mx-auto bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-hidden mb-12">
+
+                    <form method="POST" id="adjustStockForm" novalidate
+                          class="p-6 sm:p-8 md:p-10 space-y-6 w-full">
+                        {% csrf_token %}
+
+                        <div class="w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Product <span class="text-red-500">*</span>
+                            </label>
+                            <select name="product" id="productSelect" required
+                                class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                                <option value="" disabled selected>Select a product</option>
+                                {% for product in products %}
+                                <option value="{{ product.id }}"
+                                        data-expiry="{{ product.is_expiry_tracked|yesno:'true,false' }}">
+                                    {{ product.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Batch <span class="text-red-500">*</span>
+                            </label>
+                            <!-- This will be dynamically updated via JS -->
+                            <select name="batch_number" id="batchSelect" required disabled
+                                class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                                <option value="">Select Product First</option>
+                            </select>
+                        </div>
+
+                        <div class="w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Adjustment Type<span class="text-red-500">*</span>
+                            </label>
+                            <select name="adjustment_type" id="adjustmentType" required
+                                class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                                <option value="add">Add Stock</option>
+                                <option value="remove">Remove Stock</option>
+                            </select>
+                        </div>
+
+                        <!-- Expiry Date (ONLY FOR ADD STOCK) -->
+                        <div id="expiry-field" class="hidden w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Expiry Date <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date"
+                                   name="expiry_date"
+                                   id="expiryDate"
+                                   min="{{ today }}"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-white">
+                        </div>
+
+                        <div class="w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Quantity<span class="text-red-500">*</span>
+                            </label>
+                            <!-- Added strict max validation limit to prevent database overload/exploits -->
+                            <input type="number" name="quantity" min="1" max="100000000" required
+                                   id="quantityInput"
+                                   placeholder="Enter quantity"
+                                   class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all bg-white">
+                        </div>
+
+                        <div class="w-full min-w-0 relative">
+                            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-2 ml-1">
+                                Reason<span class="text-red-500">*</span>
+                            </label>
+                            <textarea name="reason" id="reasonInput" rows="3" required
+                                class="w-full border border-slate-300 rounded-xl px-4 py-3 text-sm sm:text-base focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none bg-white"
+                                placeholder="Damage, stock correction, audit adjustment..."></textarea>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row justify-end gap-3 pt-6 mt-4 border-t border-slate-100">
+                            <a href="{% url 'batch_stock_list' %}"
+                               class="w-full sm:w-auto px-8 py-3 rounded-2xl bg-white border border-slate-200 font-bold text-sm text-slate-500 hover:bg-slate-50 transition-all text-center">
+                                Cancel
+                            </a>
+                            <button type="submit" class="w-full sm:w-auto px-10 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:shadow-indigo-200 transition-all active:scale-[0.98]">
+                                Save Adjustment
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+    lucide.createIcons();
+
+    // ==== DYNAMIC CUSTOM SELECT (BYPASSES NATIVE OS DROPDOWN) ====
+    // This engine converts native <select> into custom HTML divs to bypass Chrome's 75% zoom emulator bug
+    function initCustomSelects(container = document) {
+        const selects = container.querySelectorAll('select:not([data-customized])');
+        
+        selects.forEach(select => {
+            select.setAttribute('data-customized', 'true');
+            select.style.display = 'none'; // Hide native select
+
+            const wrapper = document.createElement('div');
+            wrapper.className = 'custom-dropdown relative w-full';
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'dropdown-btn w-full flex items-center justify-between px-4 py-3 border border-slate-300 rounded-xl text-sm sm:text-base font-medium bg-white transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20';
+            
+            // Check disabled state
+            if (select.disabled) {
+                btn.disabled = true;
+                btn.classList.add('bg-slate-50', 'cursor-not-allowed', 'opacity-70');
+            } else {
+                btn.classList.add('hover:border-indigo-400');
+            }
+
+            // Check error state (if triggered before init)
+            if (select.classList.contains('field-error')) {
+                btn.classList.remove('border-slate-300');
+                btn.classList.add('border-red-500', 'bg-red-50');
+            }
+
+            const selectedText = document.createElement('span');
+            selectedText.className = 'selected-text text-slate-700 truncate pr-4 text-left flex-1';
+            const initialSelected = Array.from(select.options).find(opt => opt.selected) || select.options[0];
+            selectedText.innerText = initialSelected ? initialSelected.text : 'Select...';
+            
+            const icon = document.createElement('i');
+            icon.setAttribute('data-lucide', 'chevron-down');
+            icon.className = 'dropdown-icon w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200';
+
+            btn.appendChild(selectedText);
+            btn.appendChild(icon);
+
+            const menu = document.createElement('div');
+            // 'absolute left-0 top-full z-[500]' ensures it drops down relative to its parent without stretching the screen
+            menu.className = 'dropdown-menu absolute hidden top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-lg z-[500] max-h-60 overflow-y-auto origin-top transition-all';
+
+            Array.from(select.options).forEach(opt => {
+                const item = document.createElement('div');
+                item.className = 'dropdown-item px-4 py-3 text-sm hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors';
+                
+                // Keep the same visual text logic
+                if (opt.text.trim() === '---------' || opt.text === '') {
+                    item.innerText = 'Select Option'; 
+                } else {
+                    item.innerText = opt.text;
+                }
+                
+                item.dataset.value = opt.value;
+                
+                // Highlight initially selected
+                if (select.value === opt.value && opt.value !== '') {
+                     item.classList.add('bg-indigo-50/50', 'text-indigo-700', 'font-bold');
+                }
+
+                item.addEventListener('click', () => {
+                    selectedText.innerText = item.innerText;
+                    select.value = opt.value;
+                    
+                    // Reset styling for all items, add styling to selected
+                    Array.from(menu.children).forEach(c => c.classList.remove('bg-indigo-50/50', 'text-indigo-700', 'font-bold'));
+                    item.classList.add('bg-indigo-50/50', 'text-indigo-700', 'font-bold');
+
+                    // Remove error visuals on selection
+                    if (select.value) {
+                         btn.classList.remove('border-red-500', 'bg-red-50');
+                         if(!select.disabled) btn.classList.add('border-slate-300', 'bg-white');
+                         select.classList.remove('field-error');
+                         const errorMsg = wrapper.parentNode.querySelector('.error-text');
+                         if(errorMsg) errorMsg.remove();
+                    }
+
+                    // Dispatch change event so other logic (like the dynamic fetch) still runs
+                    select.dispatchEvent(new Event('change'));
+                    
+                    menu.classList.add('hidden');
+                    wrapper.classList.remove('custom-dropdown-open');
+                });
+                menu.appendChild(item);
+            });
+
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (select.disabled) return;
+                
+                const isHidden = menu.classList.contains('hidden');
+                
+                // Close all other open dropdowns
+                document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+                
+                if (isHidden) {
+                    menu.classList.remove('hidden');
+                    wrapper.classList.add('custom-dropdown-open');
+                }
+            });
+
+            wrapper.appendChild(btn);
+            wrapper.appendChild(menu);
+            select.parentNode.insertBefore(wrapper, select.nextSibling);
+        });
+        
+        if(typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    // Function to completely rebuild the custom UI when native options change dynamically via fetch
+    function refreshCustomSelect(selectElement) {
+        if (selectElement.nextElementSibling && selectElement.nextElementSibling.classList.contains('custom-dropdown')) {
+            selectElement.nextElementSibling.remove();
+        }
+        selectElement.removeAttribute('data-customized');
+        initCustomSelects(selectElement.parentNode);
+    }
+
+    // Close custom dropdowns on outside click
+    document.addEventListener('click', (e) => {
+        if (!e.target.closest('.custom-dropdown')) {
+            document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+            document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+        }
+    });
+
+    // Initialize custom selects on load
+    document.addEventListener('DOMContentLoaded', () => {
+        initCustomSelects();
+    });
+
+
+    // ==== SIDEBAR LOGIC ====
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    const backdrop = document.getElementById('sidebar-overlay');
+
+    function isMobile() {
+        return window.innerWidth < 768;
+    }
+
+    function openSidebarMobile() {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+    }
+
+    function closeSidebarMobile() {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    toggleBtn.addEventListener('click', () => {
+        if (isMobile()) {
+            if (sidebar.classList.contains('-translate-x-full')) {
+                openSidebarMobile();
+            } else {
+                closeSidebarMobile();
+            }
+        } else {
+            if (sidebar.classList.contains('w-64')) {
+                sidebar.classList.remove('w-64');
+                sidebar.classList.add('w-20');
+                sidebar.classList.toggle('collapsed');
+            } else {
+                sidebar.classList.remove('w-20');
+                sidebar.classList.add('w-64');
+                sidebar.classList.toggle('collapsed');
+            }
+        }
+    });
+
+    backdrop.addEventListener('click', closeSidebarMobile);
+
+    sidebar.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => {
+            if (isMobile()) {
+                closeSidebarMobile();
+            }
+        });
+    });
+
+    window.addEventListener('resize', () => {
+        if (!isMobile()) {
+            backdrop.classList.add('hidden');
+            sidebar.classList.remove('-translate-x-full');
+            document.body.classList.remove('overflow-hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+        }
+    });
+
+    // ==== DYNAMIC FORM LOGIC ====
+    const productSelect = document.getElementById('productSelect');
+    const batchSelect = document.getElementById("batchSelect");
+    const qtyInput = document.getElementById("quantityInput");
+    const adjustmentType = document.getElementById('adjustmentType');
+    const expiryField = document.getElementById('expiry-field');
+    const expiryInput = document.getElementById('expiryDate');
+    const reasonInput = document.getElementById('reasonInput');
+    const adjustForm = document.getElementById('adjustStockForm');
+
+    // --- Dynamic Data Loading via AJAX ---
+    productSelect.addEventListener("change", async function () {
+        const productId = this.value;
+
+        clearErrors();
+        batchSelect.disabled = true;
+        batchSelect.innerHTML = `<option value="">Loading batches...</option>`;
+        
+        // **CRITICAL FIX**: Rebuild the custom dropdown to reflect the "Loading..." and disabled state
+        refreshCustomSelect(batchSelect);
+
+        if (!productId) {
+            batchSelect.innerHTML = `<option value="">Select Product First</option>`;
+            refreshCustomSelect(batchSelect);
+            return;
+        }
+
+        try {
+            const res = await fetch(`{% url 'get_batches_by_product' %}?product=${productId}`);
+            if (!res.ok) throw new Error("Failed to fetch batches");
+
+            const data = await res.json();
+            batchSelect.innerHTML = "";
+
+            if (data.length === 0) {
+                batchSelect.innerHTML = `<option value="">No batches available</option>`;
+                refreshCustomSelect(batchSelect);
+                return;
+            }
+
+            batchSelect.innerHTML = `<option value="">Select Batch</option>`;
+            data.forEach(b => {
+                const opt = document.createElement("option");
+                opt.value = b.batch_number;
+                opt.dataset.max = b.quantity;
+                opt.textContent = `${b.batch_number} (Qty: ${b.quantity})`;
+                batchSelect.appendChild(opt);
+            });
+
+            batchSelect.disabled = false;
+            
+            // **CRITICAL FIX**: Rebuild the custom dropdown to display the new batches fetched from server
+            refreshCustomSelect(batchSelect);
+
+        } catch (error) {
+            console.error(error);
+            batchSelect.innerHTML = `<option value="">Error loading batches</option>`;
+            refreshCustomSelect(batchSelect);
+        }
+
+        toggleExpiryField();
+    });
+
+    async function updateMaxQuantity() {
+        if (!productSelect.value || !batchSelect.value) return;
+
+        const selectedBatch = batchSelect.options[batchSelect.selectedIndex];
+        const currentBatchStock = parseInt(selectedBatch.dataset.max || 0);
+
+        if (adjustmentType.value === "remove") {
+            qtyInput.max = currentBatchStock;
+            qtyInput.placeholder = `Max available: ${currentBatchStock}`;
+        } else {
+            // Apply the new cap of 100M so users don't break database integer limits
+            qtyInput.max = 100000000;
+            qtyInput.placeholder = "Enter quantity";
+        }
+    }
+
+    batchSelect.addEventListener("change", updateMaxQuantity);
+    
+    adjustmentType.addEventListener("change", () => {
+        updateMaxQuantity();
+        toggleExpiryField();
+    });
+
+    // --- Validation Logic ---
+    function toggleExpiryField() {
+        const selectedOption = productSelect.options[productSelect.selectedIndex];
+        const isExpiryTracked = selectedOption?.dataset.expiry === "true";
+
+        if (adjustmentType.value === "add" && isExpiryTracked) {
+            expiryField.classList.remove("hidden");
+        } else {
+            expiryField.classList.add("hidden");
+            expiryInput.value = ""; // Clear if hidden
+        }
+    }
+
+    function showFieldError(fieldName, message) {
+        const field = document.querySelector(`[name="${fieldName}"]`);
+        if (!field) return;
+        
+        field.classList.add('field-error');
+
+        // Apply error styles to custom dropdown button if it's a select field
+        if (field.tagName === 'SELECT' && field.nextElementSibling?.classList.contains('custom-dropdown')) {
+            const btn = field.nextElementSibling.querySelector('.dropdown-btn');
+            btn.classList.remove('border-slate-300', 'bg-white');
+            btn.classList.add('border-red-500', 'bg-red-50');
+        }
+        
+        const error = document.createElement('p');
+        error.className = 'error-text';
+        error.textContent = message;
+        field.parentNode.appendChild(error);
+    }
+
+    function clearErrors() {
+        // Clear native field errors
+        document.querySelectorAll('.field-error').forEach(el => el.classList.remove('field-error'));
+        document.querySelectorAll('.error-text').forEach(el => el.remove());
+        
+        // Clear custom dropdown visual errors
+        document.querySelectorAll('.custom-dropdown .dropdown-btn').forEach(btn => {
+            btn.classList.remove('border-red-500', 'bg-red-50');
+            if (!btn.disabled) {
+                btn.classList.add('border-slate-300', 'bg-white');
+            }
+        });
+    }
+
+    adjustForm.addEventListener('submit', function (e) {
+        clearErrors();
+        let valid = true;
+
+        const product = productSelect.value;
+        const batch = batchSelect.value;
+        const type = adjustmentType.value;
+        const qty = parseInt(qtyInput.value);
+        const reason = reasonInput.value.trim();
+        const selectedBatch = batchSelect.options[batchSelect.selectedIndex];
+        const maxQtyAvailable = selectedBatch ? parseInt(selectedBatch.dataset.max || 0) : 0;
+        
+        const selectedProductOption = productSelect.options[productSelect.selectedIndex];
+        const isExpiryTracked = selectedProductOption?.dataset.expiry === "true";
+
+        // 1. Product Validation
+        if (!product) {
+            showFieldError('product', 'Please select a product');
+            valid = false;
+        }
+
+        // 2. Batch Validation
+        if (!batch) {
+            showFieldError('batch_number', 'Please select a batch');
+            valid = false;
+        }
+
+        // 3. Expiry Date Validation (Only if tracked and adding)
+        if (type === 'add' && isExpiryTracked) {
+            if (!expiryInput.value) {
+                showFieldError('expiry_date', 'Expiry date is required for this product');
+                valid = false;
+            }
+        }
+
+        // 4. Quantity Validation (WITH ROBUST OVERFLOW PREVENTION)
+        if (isNaN(qty) || qty <= 0) {
+            showFieldError('quantity', 'Enter a valid quantity greater than 0');
+            valid = false;
+        } else if (qty > 100000000) {
+            showFieldError('quantity', 'Quantity exceeds maximum allowed limit (100,000,000)');
+            valid = false;
+        } else if (type === 'remove' && qty > maxQtyAvailable) {
+            showFieldError('quantity', `Insufficient stock. Maximum available is ${maxQtyAvailable}`);
+            valid = false;
+        }
+
+        // 5. Reason Validation
+        if (!reason) {
+            showFieldError('reason', 'Please provide a reason for this adjustment');
+            valid = false;
+        }
+
+        if (!valid) {
+            e.preventDefault();
+            // Scroll to the first error properly handling custom elements
+            const firstError = document.querySelector('.field-error, .bg-red-50');
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }
+    });
+
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+    const params = new URLSearchParams(window.location.search);
+    const popup = document.getElementById("successPopup");
+    const form = document.getElementById("adjustStockForm");
+
+    if(params.get("success") === "1" && popup){
+        popup.classList.remove("hidden");
+        form.reset();
+        
+        // Re-initialize custom dropdowns on form reset
+        setTimeout(() => {
+            document.querySelectorAll('select').forEach(select => refreshCustomSelect(select));
+        }, 10);
+
+        setTimeout(()=>{
+            popup.style.opacity = "0";
+            setTimeout(()=>{
+                popup.remove();
+            },500);
+        },2000);
+
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+});
+</script>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const toasts = document.querySelectorAll(".toast-item");
+    if (!toasts.length) return;
+
+    setTimeout(() => {
+        toasts.forEach(t => {
+            t.style.opacity = "0";
+            t.style.transform = "translateY(-10px)";
+        });
+
+        setTimeout(() => {
+            document.getElementById("toast-container")?.remove();
+        }, 500);
+    }, 2500);
+});
+</script>
+
+<script>
+const logoutModal = document.getElementById('logout-modal');
+const modalContent = document.getElementById('modal-content');
+const logoutLoader = document.getElementById('logout-loader');
+const logoutForm = document.getElementById('logout-form');
+
+function openLogoutModal() {
+    logoutModal.classList.remove('hidden');
+    setTimeout(() => {
+        modalContent.classList.remove('scale-95', 'opacity-0');
+    }, 10);
+}
+
+function closeLogoutModal() {
+    modalContent.classList.add('scale-95', 'opacity-0');
+    setTimeout(() => {
+        logoutModal.classList.add('hidden');
+    }, 300);
+}
+
+logoutForm.addEventListener('submit', function (e) {
+    e.preventDefault();
+    closeLogoutModal();
+
+    setTimeout(() => {
+        logoutLoader.classList.remove('hidden');
+
+        setTimeout(() => {
+            logoutForm.submit();
+        }, 1600);
+    }, 300);
+});
+</script>
+</body>
+</html>

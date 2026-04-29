@@ -1,0 +1,1663 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>
+    {{ company.name }} | {% if is_edit %}Edit Customer{% else %}Add Customer{% endif %}
+</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            scroll-behavior: smooth;
+        }
+
+        /* Custom Scrollbar Styling */
+        .custom-scrollbar::-webkit-scrollbar { 
+            width: 4px; 
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track { 
+            background: #f1f5f9; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb { 
+            background: #cbd5e1; 
+            border-radius: 10px; 
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Sidebar Transition Logic */
+        .sidebar { 
+            transition: transform 0.3s ease, width 0.3s ease; 
+        }
+        
+        /* Collapsed State Styles (Desktop Rail View) */
+        .sidebar.collapsed-desktop {
+            width: 80px !important;
+        }
+        .sidebar.collapsed-desktop .sidebar-text {
+            display: none;
+        }
+        .sidebar.collapsed-desktop .nav-item {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .sidebar.collapsed-desktop .sidebar-header {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+        .sidebar.collapsed-desktop .sidebar-section-label {
+            display: none;
+        }
+        .sidebar.collapsed-desktop .sidebar-footer-item {
+            justify-content: center;
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* Active Navigation Link */
+        .active-nav { 
+            background-color: #4f46e5; 
+            color: white !important; 
+            box-shadow: 0 10px 15px -3px rgba(79, 70, 229, 0.2); 
+        }
+        
+        /* Form Global Styling */
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="tel"],
+        input[type="url"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            height: 44px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 0.75rem;
+            background-color: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Original Select Styling (Kept as fallback, though hidden by JS) */
+        select {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            height: 44px;
+            padding: 0 16px;
+            font-size: 0.875rem;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 0.75rem;
+            background-color: #ffffff;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 1rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25em 1.25em;
+            padding-right: 2.5rem;
+            cursor: pointer;
+        }
+
+        textarea {
+            height: auto;
+            padding: 12px 16px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 4px rgb(79 70 229 / 10%);
+        }
+
+        input.border-red-500, select.border-red-500, textarea.border-red-500 {
+            border-color: #ef4444 !important;
+            background-color: #fef2f2 !important;
+        }
+
+        /* Tab Active State */
+        .tab-active { 
+            background-color: #4f46e5; 
+            color: white !important; 
+            border-bottom: 2px solid #4f46e5;
+        }
+
+        /* Animation for Logout Loader */
+        .box-loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #4f46e5;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { 
+            to { transform: rotate(360deg); } 
+        }
+
+        /* Tab content transitions */
+        .tab-content {
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Formset Row Animation */
+        .formset-row {
+            animation: slideDown 0.3s ease-out;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: scale(0.98) translateY(-10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* Responsive Formset Actions */
+        @media (max-width: 640px) {
+            .formset-row {
+                padding: 1rem !important;
+            }
+            .formset-delete-btn {
+                position: absolute;
+                top: 0.5rem;
+                right: 0.5rem;
+            }
+        }
+
+        /* Custom Dropdown Adjustments */
+        .custom-dropdown-open .dropdown-btn {
+            border-color: #4f46e5 !important;
+            box-shadow: 0 0 0 4px rgb(79 70 229 / 10%) !important;
+        }
+        .custom-dropdown-open .dropdown-icon {
+            transform: rotate(180deg);
+        }
+
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-hidden w-full max-w-full">
+    
+    <!-- ==== LOGOUT LOADER OVERLAY ==== -->
+    <div id="logout-loader" class="fixed inset-0 z-[100] bg-white flex flex-col items-center justify-center hidden">
+        <div class="box-loader"></div>
+        <h3 class="mt-10 text-2xl font-bold text-slate-800 tracking-tight">Packing your workspace...</h3>
+        <p class="text-slate-400 font-medium mt-2">Saving progress and signing out safely.</p>
+    </div>
+
+    <!-- ===== DJANGO MESSAGES TOAST ===== -->
+{% if messages %}
+    {% for message in messages %}
+        <div id="toast-msg"
+            class="fixed top-6 left-1/2 -translate-x-1/2 z-[200]
+                flex items-center gap-3 px-8 py-4 rounded-2xl shadow-2xl
+                font-bold text-sm transition-all duration-500 opacity-100
+                {% if message.tags == 'success' %}
+                    bg-green-50 border border-green-200 text-green-700
+                {% else %}
+                    bg-red-50 border border-red-200 text-red-700
+                {% endif %}"
+            style="min-width: 320px; max-width: 480px;">
+
+            <span class="w-8 h-8 rounded-full flex items-center justify-center shrink-0
+                {% if message.tags == 'success' %} bg-green-100 {% else %} bg-red-100 {% endif %}">
+                {% if message.tags == 'success' %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-green-500"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                {% else %}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-red-500"
+                        fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                            d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    </svg>
+                {% endif %}
+            </span>
+
+            <span>{{ message }}</span>
+
+            <button onclick="document.getElementById('toast-msg').remove()"
+                class="ml-auto transition-colors text-lg leading-none
+                {% if message.tags == 'success' %} text-green-300 hover:text-green-600
+                {% else %} text-red-300 hover:text-red-600 {% endif %}">
+                &times;
+            </button>
+        </div>
+    {% endfor %}
+{% endif %}
+
+<script>
+    setTimeout(() => {
+        const toast = document.getElementById('toast-msg');
+        if (toast) {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(-50%) translateY(-20px)';
+            setTimeout(() => toast.remove(), 500);
+        }
+    }, 4000);
+</script>
+
+{% block content %}{% endblock %}
+
+
+
+    <!-- ==== LOGOUT CONFIRMATION MODAL ==== -->
+    <div id="logout-modal" class="fixed inset-0 z-[90] bg-slate-900/40 backdrop-blur-md flex items-center justify-center hidden">
+        <div class="bg-white rounded-[2.5rem] p-10 max-w-sm w-full mx-4 shadow-2xl transform transition-all scale-95 opacity-0 duration-300 border border-slate-100" id="modal-content">
+            <div class="w-20 h-20 bg-rose-50 text-rose-600 rounded-3xl flex items-center justify-center mb-8 mx-auto">
+                <i data-lucide="log-out" class="w-10 h-10"></i>
+            </div>
+            <h3 class="text-3xl font-bold text-slate-900 text-center tracking-tight">Ready to go?</h3>
+            <p class="text-slate-500 mt-4 mb-10 text-center leading-relaxed">Confirm to sign out of your portal. We'll make sure your session is closed securely.</p>
+            <div class="flex flex-col gap-3">
+                <form id="logout-form" action="{% url 'company_logout' %}" method="POST" class="w-full">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl hover:bg-indigo-700 shadow-xl shadow-indigo-100 transition-all active:scale-[0.98]">
+                        Yes, Log me out
+                    </button>
+                </form>
+                <button onclick="closeLogoutModal()" class="w-full px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl hover:bg-slate-200 transition-all">
+                    Stay here
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="flex h-screen overflow-hidden w-full max-w-full">
+
+        <!-- ==== SIDEBAR ==== -->
+        <aside id="sidebar" class="sidebar fixed md:static top-0 left-0 h-screen w-64 bg-white border-r border-slate-200 flex flex-col shrink-0 z-50 -translate-x-full md:translate-x-0 transition-all duration-300">
+            
+            <div class="p-4 flex items-center h-16 shrink-0 sidebar-header border-b border-slate-50">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="bg-indigo-600 p-2 rounded-lg text-white shrink-0 shadow-lg shadow-indigo-100">
+                        <i data-lucide="building-2" class="w-6 h-6"></i>
+                    </div>
+                    <div class="sidebar-text">
+                        <h1 class="font-bold text-lg leading-none truncate text-slate-800">{{ company.name|default:"Enterprise" }}</h1>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Management</p>
+                    </div>
+                </div>
+            </div>
+
+                                    <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+            <div class="p-3 border-t border-slate-100">
+                <button onclick="openLogoutModal()" class="sidebar-footer-item flex items-center gap-3 w-full px-3 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-xl transition-all group">
+                    <i data-lucide="log-out" class="w-5 h-5 shrink-0 transition-transform group-hover:-translate-x-1"></i>
+                    <span class="sidebar-text">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Sidebar Overlay (Mobile) -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 hidden md:hidden"></div>
+
+        <!-- ==== MAIN CONTENT AREA ==== -->
+        <main class="flex-1 flex flex-col overflow-y-auto overflow-x-hidden w-full max-w-full">
+
+            <!-- Global Header -->
+            <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-8 shrink-0 z-30">
+               <div class="flex items-center gap-4 min-w-0">
+                    <button id="toggle-sidebar" class="p-2 hover:bg-slate-50 rounded-lg text-slate-500 transition-colors">
+                        <i data-lucide="menu" class="w-5 h-5"></i>
+                    </button>
+
+                    <nav class="flex items-center gap-2 text-xs sm:text-sm text-slate-400 font-medium overflow-hidden whitespace-nowrap">
+                        <a href="{% url 'company_dashboard' %}" class="hover:text-indigo-600 transition-colors truncate">
+                            Dashboard
+                        </a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 opacity-50"></i>
+                        <a href="{% url 'customer_list' %}" class="hover:text-indigo-600 transition-colors truncate">
+                            Customers
+                        </a>
+                        <i data-lucide="chevron-right" class="w-4 h-4 shrink-0 opacity-50"></i>
+                        <span class="text-slate-800 font-semibold truncate">
+                            {% if is_edit %}Edit Customer{% else %}Add Customer{% endif %}
+                        </span>
+                    </nav>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <div class="text-right hidden sm:block">
+                        <p class="text-xs font-bold text-slate-800">{{ request.user.username }}</p>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-tighter">Authorized Admin</p>
+                    </div>
+                    <div class="h-10 w-10 rounded-full bg-indigo-50 border-2 border-white shadow-sm flex items-center justify-center text-indigo-700 font-bold">
+                        {{ request.user.username|slice:":1"|upper|default:"A" }}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Container -->
+            <div class="flex-1 p-4 sm:p-6 md:p-10 w-full max-w-full">
+                <div class="max-w-5xl mx-auto space-y-8 w-full">
+
+                    <!-- Title and Back Action -->
+                    <div class="space-y-1">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-3xl font-black tracking-tight text-slate-900">
+                                {% if is_edit %}Edit Customer{% else %}Add Customer{% endif %}
+                            </h2>
+                            <a href="{% url 'customer_list' %}" 
+                            class="flex items-center gap-2 text-xs font-bold text-slate-400 
+                            hover:text-indigo-600 sm:px-4 sm:py-2 sm:border sm:border-transparent 
+                            sm:hover:border-slate-200 sm:rounded-xl transition-all group">
+                                <i data-lucide="arrow-left" class="w-4 h-4 transition-transform group-hover:-translate-x-1"></i>
+                                <span class="sm:hidden">BACK</span>
+                                <span class="hidden sm:inline">BACK TO CUSTOMERS</span>
+                            </a>
+                        </div>
+                        <p class="text-slate-500 text-sm">
+                            Create partner profiles with contact & tax info.
+                        </p>
+                    </div>
+
+                    <!-- FORM CARD WRAPPER -->
+                    <div class="bg-white rounded-[2rem] border border-slate-200 shadow-xl shadow-slate-200/50 overflow-x-hidden overflow-y-visible mb-12 w-full max-w-full">
+                        <form method="post" novalidate id="customerForm" class="w-full">
+                            {% csrf_token %}
+
+                            <!-- MULTI-STEP TABS HEADER -->
+                            <div class="flex border-b border-slate-100 bg-slate-50/50 overflow-x-auto no-scrollbar px-2 w-full">
+                                <button type="button" data-tab="basic" class="tab-btn tab-active px-8 py-5 text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap">
+                                    01. Basic Profile
+                                </button>
+                                <button type="button" data-tab="addresses" class="tab-btn px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">
+                                    02. Business Locations
+                                </button>
+                                <button type="button" data-tab="contacts" class="tab-btn px-8 py-5 text-xs font-bold uppercase tracking-widest text-slate-400 transition-all whitespace-nowrap">
+                                    03. Contact Persons
+                                </button>
+                            </div>
+
+                            <!-- TAB 01: BASIC DETAILS -->
+                            <div id="basic" class="tab-content p-8 md:p-12 space-y-10 w-full">
+                                <div class="grid md:grid-cols-3 gap-10 w-full">
+                                    <div class="space-y-2">
+                                        <h3 class="text-lg font-bold text-slate-900">General Information</h3>
+                                        <p class="text-xs text-slate-500 leading-relaxed">Fundamental data used for billing, shipping documents, and tax filings.</p>
+                                    </div>
+                                    <div class="md:col-span-2 space-y-6 w-full">
+                                        {% for field in form %}
+                                            {% if field.name != 'notes' %}
+                                                <div class="space-y-2 group w-full min-w-0 relative">
+                                                    <label class="text-[11px] font-bold uppercase text-slate-500 ml-1 flex items-center gap-1">
+                                                        {{ field.label }} 
+                                                        {% if field.field.required or "phone" in field.name %}
+                                                            <span class="text-rose-500">*</span>
+                                                        {% endif %}
+                                                    </label>
+                                                    <div class="w-full min-w-0 relative">
+                                                        <!-- Django automatically handles the rendering. 
+                                                             If it is a select box, our new JS script below will dynamically 
+                                                             replace it with a beautiful responsive UI component. -->
+                                                        {{ field }}
+                                                    </div>
+                                                    
+                                                    {% if field.name == "credit_limit" %}
+                                                        <p id="credit-limit-error" class="text-rose-600 text-[11px] font-bold mt-1 hidden">
+                                                            Enter a valid numeric value.
+                                                        </p>
+                                                    {% endif %}
+
+                                                    {% if field.errors %}
+                                                        <p class="text-rose-600 text-[11px] font-bold mt-1 pl-1 flex items-center gap-1">
+                                                            <i data-lucide="alert-circle" class="w-3 h-3"></i> {{ field.errors|striptags }}
+                                                        </p>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TAB 02: ADDRESSES -->
+                            <div id="addresses" class="tab-content hidden p-8 md:p-12 space-y-8 w-full">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-slate-900">Business Locations</h3>
+                                        <p class="text-sm text-slate-500">Provide multiple billing and shipping address details.</p>
+                                    </div>
+                                    <button type="button" id="add-address-btn" class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all whitespace-nowrap">
+                                        <i data-lucide="plus" class="w-4 h-4"></i> Add Address
+                                    </button>
+                                </div>
+                                
+                                <div id="addresses-container" class="space-y-6 w-full">
+                                    {{ address_formset.management_form }}
+                                    
+                                    <!-- Empty Template for Dynamic Addition -->
+                                    <div id="empty-address-form" class="hidden">
+                                        <div class="formset-row p-8 rounded-3xl border border-slate-200 bg-slate-50/30 space-y-6 relative group w-full">
+                                            <button type="button" class="remove-formset-row absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-600 transition-colors z-10">
+                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                            </button>
+                                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                                                {% for field in address_formset.empty_form.visible_fields %}
+                                                    {% if field.name != 'place_of_supply' %}
+                                                        {% if field.field.widget.input_type == "checkbox" %}
+                                                            <div class="flex items-center gap-3 mt-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full">
+                                                                {{ field }}
+                                                                <label class="text-sm font-bold text-slate-700 cursor-pointer">{{ field.label }}</label>
+                                                            </div>
+                                                        {% else %}
+                                                            <div class="space-y-2 w-full min-w-0 relative">
+                                                                <label class="text-[11px] font-bold uppercase text-slate-500 ml-1">
+                                                                    {{ field.label }} {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+                                                                </label>
+                                                                <div class="w-full min-w-0 relative">{{ field }}</div>
+                                                            </div>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% for aform in address_formset %}
+                                    <div class="formset-row p-8 rounded-3xl border border-slate-200 bg-slate-50/30 space-y-6 relative group w-full">
+                                        {% for hidden in aform.hidden_fields %} {{ hidden }} {% endfor %}
+                                        {% if address_formset.can_delete %}
+                                            <div class="hidden">{{ aform.DELETE }}</div>
+                                            <button type="button" class="remove-formset-row absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-600 transition-colors z-10">
+                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                            </button>
+                                        {% endif %}
+                                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                                            {% for field in aform.visible_fields %}
+                                                {% if field.name != 'place_of_supply' %}
+                                                    {% if field.field.widget.input_type == "checkbox" %}
+                                                        <div class="flex items-center gap-3 mt-6 p-4 bg-white rounded-xl border border-slate-200 shadow-sm w-full">
+                                                            {{ field }}
+                                                            <label class="text-sm font-bold text-slate-700 cursor-pointer">{{ field.label }}</label>
+                                                        </div>
+                                                    {% else %}
+                                                        <div class="space-y-2 w-full min-w-0 relative">
+                                                            <label class="text-[11px] font-bold uppercase text-slate-500 ml-1">
+                                                                {{ field.label }} {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+                                                            </label>
+                                                            <div class="w-full min-w-0 relative">{{ field }}</div>
+                                                            {% if field.errors %}
+                                                                <p class="text-rose-600 text-[11px] font-bold mt-1">{{ field.errors|striptags }}</p>
+                                                            {% endif %}
+                                                        </div>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- TAB 03: CONTACT PERSONS -->
+                            <div id="contacts" class="tab-content hidden p-8 md:p-12 space-y-8 w-full">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 class="text-xl font-bold text-slate-900">Key Contact Persons</h3>
+                                        <p class="text-sm text-slate-500">Primary point of contacts at the customer organization.</p>
+                                    </div>
+                                    <button type="button" id="add-contact-btn" class="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-600 rounded-xl text-xs font-bold hover:bg-indigo-600 hover:text-white transition-all whitespace-nowrap">
+                                        <i data-lucide="plus" class="w-4 h-4"></i> Add Contact
+                                    </button>
+                                </div>
+
+                                <div id="contacts-container" class="space-y-6 w-full">
+                                    {{ contact_formset.management_form }}
+                                    
+                                    <!-- Empty Template for Dynamic Addition -->
+                                    <div id="empty-contact-form" class="hidden">
+                                        <div class="formset-row p-8 rounded-3xl border border-slate-200 bg-slate-50/30 space-y-6 relative group w-full">
+                                            <button type="button" class="remove-formset-row absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-600 transition-colors z-10">
+                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                            </button>
+                                            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                                                {% for field in contact_formset.empty_form.visible_fields %}
+                                                    <div class="space-y-2 w-full min-w-0 relative">
+                                                        <label class="text-[11px] font-bold uppercase text-slate-500 ml-1">
+                                                            {{ field.label }} {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+                                                        </label>
+                                                        <div class="w-full min-w-0 relative">{{ field }}</div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {% for cform in contact_formset %}
+                                    <div class="formset-row p-8 rounded-3xl border border-slate-200 bg-slate-50/30 space-y-6 relative w-full">
+                                        {% for hidden in cform.hidden_fields %} {{ hidden }} {% endfor %}
+                                        {% if contact_formset.can_delete %}
+                                            <div class="hidden">{{ cform.DELETE }}</div>
+                                            <button type="button" class="remove-formset-row absolute top-4 right-4 p-2 text-slate-400 hover:text-rose-600 transition-colors z-10">
+                                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                                            </button>
+                                        {% endif %}
+                                        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full">
+                                            {% for field in cform.visible_fields %}
+                                                <div class="space-y-2 w-full min-w-0 relative">
+                                                    <label class="text-[11px] font-bold uppercase text-slate-500 ml-1">
+                                                        {{ field.label }} {% if field.field.required %}<span class="text-rose-500">*</span>{% endif %}
+                                                    </label>
+                                                    <div class="w-full min-w-0 relative">{{ field }}</div>
+                                                    {% if field.errors %}
+                                                        <p class="text-rose-600 text-[11px] font-bold mt-1">{{ field.errors|striptags }}</p>
+                                                    {% endif %}
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <!-- Section: Internal Notes -->
+                            <div class="grid md:grid-cols-3 gap-8 items-center pt-10 border-t border-slate-100 px-8 md:px-12 pb-10 w-full">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-900">Internal Documentation</h3>
+                                    <p class="text-sm text-slate-500 mt-2 leading-relaxed">Notes regarding credit terms, special instructions, or history. Only visible to staff.</p>
+                                </div>
+                                <div class="md:col-span-2 w-full min-w-0 relative">
+                                    <textarea name="notes" rows="4" class="w-full rounded-xl border border-slate-200 px-4 py-3 text-sm resize-none focus:ring-2 focus:ring-indigo-500/20 outline-none transition-all" placeholder="Add custom terms or internal notes here...">{{ form.notes.value|default:"" }}</textarea>
+                                </div>
+                            </div>
+
+                            <!-- FORM FOOTER ACTIONS -->
+                            <div class="px-10 py-8 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row justify-end items-center gap-4 w-full">
+                                <a href="{% url 'customer_list' %}" class="w-full sm:w-auto text-center px-8 py-3 rounded-2xl bg-white border border-slate-200 font-bold text-sm text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-all active:scale-[0.98]">
+                                    Cancel
+                                </a>
+                                <div class="flex items-center gap-4 w-full sm:w-auto">
+                                    <button type="button" id="prevBtn" class="hidden flex-1 sm:flex-none px-8 py-3 rounded-2xl bg-white border border-slate-200 font-bold text-sm text-slate-500 hover:bg-slate-100 transition-all">
+                                        Back
+                                    </button>
+                                    <button type="button" id="nextBtn" class="flex-1 sm:flex-none px-12 py-3 rounded-2xl bg-indigo-600 text-white font-bold text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 hover:shadow-indigo-200 transition-all active:scale-[0.98]">
+                                        Next Step
+                                    </button>
+                                    <button type="submit" id="saveBtn" class="flex-1 sm:flex-none px-12 py-3 rounded-2xl bg-emerald-600 text-white font-bold text-sm shadow-xl shadow-emerald-100 hover:bg-emerald-700 hover:shadow-emerald-200 transition-all active:scale-[0.98] hidden">
+                                        {% if is_edit %}Update Customer{% else %}Save Customer{% endif %}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Module Branding Footer -->
+                    <div class="text-center pb-12 w-full">
+                        <p class="text-[10px] text-slate-400 uppercase font-black tracking-[0.2em] opacity-60">Enterprise Customer Management Framework v2.0</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ==== JAVASCRIPT LOGIC ==== -->
+    <script>
+        lucide.createIcons();
+
+        // ==== DYNAMIC CUSTOM SELECT (BYPASSES NATIVE OS DROPDOWN) ====
+        // This function completely disables browser native select menus to fix the DevTools zoom bug
+        function initCustomSelects(container = document) {
+            const selects = container.querySelectorAll('select:not([data-customized])');
+            
+            selects.forEach(select => {
+                select.setAttribute('data-customized', 'true');
+                select.style.display = 'none';
+
+                const wrapper = document.createElement('div');
+                wrapper.className = 'custom-dropdown relative w-full';
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'dropdown-btn w-full flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl text-sm font-medium bg-white hover:border-indigo-400 transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/20';
+                
+                // Inherit Django error states if present
+                if (select.classList.contains('border-red-500')) {
+                    btn.classList.remove('border-slate-200');
+                    btn.classList.add('border-red-500', 'bg-red-50');
+                }
+
+                const selectedText = document.createElement('span');
+                selectedText.className = 'selected-text text-slate-700 truncate pr-4 text-left flex-1';
+                // Find selected option
+                const initialSelected = Array.from(select.options).find(opt => opt.selected) || select.options[0];
+                selectedText.innerText = initialSelected ? initialSelected.text : 'Select...';
+                
+                const icon = document.createElement('i');
+                icon.setAttribute('data-lucide', 'chevron-down');
+                icon.className = 'dropdown-icon w-4 h-4 shrink-0 text-slate-400 transition-transform duration-200';
+
+                btn.appendChild(selectedText);
+                btn.appendChild(icon);
+
+                const menu = document.createElement('div');
+                menu.className = 'dropdown-menu absolute hidden top-full left-0 mt-2 w-full bg-white border border-slate-200 rounded-xl shadow-lg z-[500] max-h-60 overflow-y-auto origin-top transition-all';
+
+                Array.from(select.options).forEach(opt => {
+                    if (opt.text.trim() === '---------' || opt.text === '') {
+                        opt.text = 'Select Option'; // Make empty choices look better
+                    }
+                    const item = document.createElement('div');
+                    item.className = 'dropdown-item px-4 py-3 text-sm hover:bg-indigo-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors';
+                    item.innerText = opt.text;
+                    item.dataset.value = opt.value;
+                    
+                    if (select.value === opt.value) {
+                         item.classList.add('bg-indigo-50/50', 'text-indigo-700', 'font-bold');
+                    }
+
+                    item.addEventListener('click', () => {
+                        selectedText.innerText = opt.text;
+                        select.value = opt.value;
+                        
+                        // Update active state visuals
+                        Array.from(menu.children).forEach(c => c.classList.remove('bg-indigo-50/50', 'text-indigo-700', 'font-bold'));
+                        item.classList.add('bg-indigo-50/50', 'text-indigo-700', 'font-bold');
+
+                        // Clear error boundaries if selected successfully
+                        if (select.value) {
+                             btn.classList.remove('border-red-500', 'bg-red-50');
+                             btn.classList.add('border-slate-200', 'bg-white');
+                        }
+
+                        // Trigger input event to clear Django server error dynamically
+                        select.dispatchEvent(new Event('input', { bubbles: true }));
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        
+                        menu.classList.add('hidden');
+                        wrapper.classList.remove('custom-dropdown-open');
+                    });
+                    menu.appendChild(item);
+                });
+
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isHidden = menu.classList.contains('hidden');
+                    
+                    // Close all others
+                    document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.add('hidden'));
+                    document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+                    
+                    if (isHidden) {
+                        menu.classList.remove('hidden');
+                        wrapper.classList.add('custom-dropdown-open');
+                    }
+                });
+
+                wrapper.appendChild(btn);
+                wrapper.appendChild(menu);
+                select.parentNode.insertBefore(wrapper, select.nextSibling);
+            });
+            
+            if(typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Close dropdowns on outside click
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.custom-dropdown')) {
+                document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
+                document.querySelectorAll('.custom-dropdown').forEach(d => d.classList.remove('custom-dropdown-open'));
+            }
+        });
+
+        // Initialize immediately
+        document.addEventListener('DOMContentLoaded', () => {
+            initCustomSelects();
+
+            // ==== CLEAR ERRORS ON INPUT (FIX FOR SERVER ERRORS LINGERING) ====
+            document.body.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA') {
+                    // Remove red borders
+                    target.classList.remove('border-red-500', 'bg-red-50');
+                    if (target.tagName === 'SELECT' && target.nextElementSibling?.classList.contains('custom-dropdown')) {
+                        const btn = target.nextElementSibling.querySelector('.dropdown-btn');
+                        if (btn) btn.classList.remove('border-red-500', 'bg-red-50');
+                    }
+                    
+                    const wrapper = target.closest('.space-y-2') || target.closest('.w-full.min-w-0.relative');
+                    if (wrapper) {
+                        // Remove dynamic JS errors
+                        const dynamicError = wrapper.querySelector('.dynamic-error');
+                        if (dynamicError) dynamicError.remove();
+
+                        // Remove Unique API errors
+                        const uniqueError = wrapper.querySelector('.unique-error');
+                        if (uniqueError) uniqueError.remove();
+                        
+                        // Remove Django server-rendered errors (excludes JS toggled permanent placeholders)
+                        const djangoErrors = wrapper.querySelectorAll('p.text-rose-600:not(#credit-limit-error):not(#email-format-error):not(.contact-email-error)');
+                        djangoErrors.forEach(err => err.remove());
+                    }
+                }
+            });
+        });
+
+
+        // ==== SIDEBAR LOGIC ====
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggle-sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.toggle('collapsed-desktop');
+                localStorage.setItem("sidebarCollapsed", sidebar.classList.contains('collapsed-desktop'));
+            } else {
+                if (sidebar.classList.contains('-translate-x-full')) {
+                    openSidebar();
+                } else {
+                    closeSidebar();
+                }
+            }
+        });
+
+        overlay.addEventListener('click', closeSidebar);
+
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 768) {
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.add('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('collapsed-desktop');
+            }
+        });
+
+        if (localStorage.getItem("sidebarCollapsed") === "true" && window.innerWidth >= 768) {
+            sidebar.classList.add('collapsed-desktop');
+        }
+
+        // ==== MULTI-STEP TAB LOGIC ====
+        const steps = ["basic", "addresses", "contacts"];
+        let currentStep = 0;
+        const nextBtn = document.getElementById("nextBtn");
+        const prevBtn = document.getElementById("prevBtn");
+        const saveBtn = document.getElementById("saveBtn");
+        const tabBtns = document.querySelectorAll('.tab-btn');
+
+        function showStep(idx) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
+            document.getElementById(steps[idx]).classList.remove('hidden');
+            
+            tabBtns.forEach((btn, i) => {
+                if(i === idx) {
+                    btn.classList.add('tab-active');
+                    btn.classList.remove('text-slate-400');
+                } else {
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('text-slate-400');
+                }
+            });
+
+            if(idx === 0) {
+                prevBtn.classList.add('hidden');
+            } else {
+                prevBtn.classList.remove('hidden');
+            }
+
+            if(idx === steps.length - 1) {
+                nextBtn.classList.add('hidden');
+                saveBtn.classList.remove('hidden');
+            } else {
+                nextBtn.classList.remove('hidden');
+                saveBtn.classList.add('hidden');
+            }
+            
+            document.querySelector('main').scrollTop = 0;
+        }
+
+        nextBtn.addEventListener("click", () => {
+
+    let stepValid = true;
+
+    // ==== STEP 1 VALIDATION ====
+    if (currentStep === 0) {
+        const section = document.getElementById("basic");
+        const inputs = section.querySelectorAll("input, select, textarea");
+
+        inputs.forEach(input => {
+
+            const isRequired = input.hasAttribute("required");
+            if (!isRequired) return;
+
+            let value = input.value;
+
+            if (input.tagName === "SELECT") {
+                value = input.value;
+            }
+
+            if (typeof value === "string") {
+                value = value.trim();
+            }
+
+            if (!value) {
+                applyError(input);
+                stepValid = false;
+            } else {
+                removeError(input);
+            }
+        });
+
+        // Block progression if any field has an active API uniqueness error or unresolved required error
+        if (section.querySelectorAll('.border-red-500').length > 0) {
+            stepValid = false;
+        }
+    }
+// ==== STEP 2 VALIDATION ====
+if (currentStep === 1) {
+    const section = document.getElementById("addresses");
+    const rows = section.querySelectorAll(".formset-row");
+
+    rows.forEach(row => {
+
+        if (row.classList.contains("hidden")) return;
+
+        const inputs = row.querySelectorAll("input, select, textarea");
+
+
+        const validInputs = Array.from(inputs).filter(input => {
+            return input.offsetParent !== null;
+        });
+
+        validInputs.forEach(input => {
+
+            if (input.name && input.name.includes("DELETE")) return;
+            if (input.type === "checkbox") return;
+
+            const isRequired =
+                input.hasAttribute("required") ||
+                input.name.includes("address_type") ||
+                input.name.includes("address_line1") ||
+                input.name.includes("city") ||
+                input.name.includes("state") ||
+                input.name.includes("zip_code") ||
+                input.name.includes("country") ||
+                input.name.includes("phone");
+
+            if (!isRequired) return;
+
+            let value = input.value;
+
+
+            if (input.tagName === "SELECT") {
+                const dropdown = input.nextElementSibling;
+
+                if (dropdown && dropdown.classList.contains("custom-dropdown")) {
+                    const text = dropdown.querySelector(".selected-text")?.innerText.trim();
+
+                    if (text && text !== "Select Option" && text !== "Select") {
+                        value = text;
+                    } else {
+                        value = "";
+                    }
+                }
+            }
+
+
+            if (typeof value === "string") {
+                value = value.trim();
+            }
+
+
+            if (!value || value === "Select Option") {
+                applyError(input);
+                stepValid = false;
+            } else {
+                removeError(input);
+            }
+        });
+
+    });
+
+    // Block progression if any field has an active API uniqueness error
+    if (section.querySelectorAll('.border-red-500').length > 0) {
+        stepValid = false;
+    }
+}
+
+
+// ==== STEP 3 VALIDATION ====
+if (currentStep === 2) {
+    const section = document.getElementById("contacts");
+    const rows = section.querySelectorAll(".formset-row");
+
+    rows.forEach(row => {
+
+        if (row.classList.contains("hidden")) return;
+
+        const inputs = row.querySelectorAll("input, select, textarea");
+
+        inputs.forEach(input => {
+
+            if (input.name && input.name.includes("DELETE")) return;
+            if (input.type === "checkbox") return;
+
+            const isRequired =
+                input.hasAttribute("required") ||
+                input.name.includes("first_name") ||
+                input.name.includes("email");
+
+            if (!isRequired) return;
+
+
+            let value = input.value;
+
+            if (input.tagName === "SELECT") {
+                const dropdown = input.nextElementSibling;
+
+                if (dropdown && dropdown.classList.contains("custom-dropdown")) {
+                    const text = dropdown.querySelector(".selected-text")?.innerText.trim();
+
+                    if (text && text !== "Select Option" && text !== "Select") {
+                        value = text;
+                    }
+                }
+            }
+
+            if (typeof value === "string") {
+                value = value.trim();
+            }
+
+            if (!value) {
+                applyError(input);
+                stepValid = false;
+            } else {
+                removeError(input);
+            }
+        });
+
+    });
+
+    // Block progression if any field has an active API uniqueness error
+    if (section.querySelectorAll('.border-red-500').length > 0) {
+        stepValid = false;
+    }
+}
+
+    if (!stepValid) {
+        const firstError = document.querySelector(".border-red-500, .bg-red-50");
+        if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+    }
+
+    if (currentStep < steps.length - 1) {
+        currentStep++;
+        showStep(currentStep);
+    }
+});
+
+        prevBtn.addEventListener("click", () => {
+            if (currentStep > 0) {
+                currentStep--;
+                showStep(currentStep);
+            }
+        });
+
+        tabBtns.forEach((btn, idx) => {
+            btn.addEventListener("click", (e) => {
+                e.preventDefault();
+                if(idx <= currentStep || idx === 0) {
+                    currentStep = idx;
+                    showStep(currentStep);
+                }
+            });
+        });
+
+        function applyError(input) {
+
+
+    let wrapper = input.closest('.space-y-2');
+
+
+    let label = wrapper?.querySelector('label');
+
+    let fieldName = "This field";
+    if (label) {
+        fieldName = label.innerText.replace('*', '').trim();
+    }
+
+    let message = `${fieldName} is required`;
+
+
+    if (input.tagName === 'SELECT' && input.nextElementSibling?.classList.contains('custom-dropdown')) {
+        const btn = input.nextElementSibling.querySelector('.dropdown-btn');
+        btn.classList.remove('border-slate-200');
+        btn.classList.add('border-red-500', 'bg-red-50');
+    } else {
+        input.classList.add("border-red-500");
+    }
+
+
+    let error = wrapper?.querySelector(".dynamic-error");
+
+    if (!error) {
+        error = document.createElement("p");
+        error.className = "text-rose-600 text-[11px] font-bold mt-1 dynamic-error";
+        wrapper.appendChild(error);
+    }
+
+    error.innerText = message;
+}
+function removeError(input) {
+
+    if (input.tagName === 'SELECT' && input.nextElementSibling?.classList.contains('custom-dropdown')) {
+        const btn = input.nextElementSibling.querySelector('.dropdown-btn');
+        btn.classList.remove('border-red-500', 'bg-red-50');
+        btn.classList.add('border-slate-200', 'bg-white');
+    } else {
+        input.classList.remove("border-red-500");
+    }
+
+    let wrapper = input.closest('.space-y-2');
+    const error = wrapper?.querySelector(".dynamic-error");
+    if (error) error.remove();
+}
+
+        // ==== DYNAMIC FORMSET MANAGEMENT ====
+        function setupFormset(containerId, prefix, emptyFormId, addBtnId) {
+            const container = document.getElementById(containerId);
+            const addBtn = document.getElementById(addBtnId);
+            const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+            const emptyTemplate = document.getElementById(emptyFormId);
+
+            addBtn.addEventListener('click', () => {
+                const currentCount = parseInt(totalForms.value);
+                const newFormHtml = emptyTemplate.innerHTML.replace(/__prefix__/g, currentCount);
+                
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = newFormHtml;
+                const newRow = wrapper.firstElementChild;
+                
+                container.appendChild(newRow);
+                totalForms.value = currentCount + 1;
+                
+                lucide.createIcons();
+                bindRemoveEvents(newRow, prefix);
+                
+                // Initialize custom selects on dynamically added rows!
+                initCustomSelects(newRow);
+                bindContactEmailValidation(newRow);
+                bindFormsetUniqueness(newRow); // Binds uniqueness to dynamically added rows
+            });
+
+            // Bind existing rows
+            container.querySelectorAll('.formset-row').forEach(row => {
+                bindRemoveEvents(row, prefix);
+            });
+        }
+
+        function bindRemoveEvents(row, prefix) {
+            const removeBtn = row.querySelector('.remove-formset-row');
+            if (!removeBtn) return;
+
+            removeBtn.addEventListener('click', () => {
+                const deleteCheckbox = row.querySelector('input[name*="DELETE"]');
+                if (deleteCheckbox) {
+                    deleteCheckbox.checked = true;
+                    row.classList.add('hidden');
+                } else {
+                    row.remove();
+                    const totalForms = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+                    totalForms.value = parseInt(totalForms.value) - 1;
+                    reIndexRows(prefix);
+                }
+            });
+        }
+
+        function reIndexRows(prefix) {
+            const containerId = prefix === 'addresses' ? 'addresses-container' : 'contacts-container';
+            const rows = document.getElementById(containerId).querySelectorAll('.formset-row:not(.hidden)');
+            rows.forEach((row, index) => {
+                row.querySelectorAll('input, select, textarea, label').forEach(el => {
+                    const regex = new RegExp(`${prefix}-\\d+-`, 'g');
+                    const replacement = `${prefix}-${index}-`;
+                    if (el.name) el.name = el.name.replace(regex, replacement);
+                    if (el.id) el.id = el.id.replace(regex, replacement);
+                    if (el.getAttribute('for')) el.setAttribute('for', el.getAttribute('for').replace(regex, replacement));
+                });
+            });
+        }
+
+        // Initialize formsets
+        setupFormset('addresses-container', 'addresses', 'empty-address-form', 'add-address-btn');
+        setupFormset('contacts-container', 'contacts', 'empty-contact-form', 'add-contact-btn');
+
+
+        // ==== FIELD VALIDATION & UNIQUENESS ====
+        function checkUniqueness(apiField, inputElement, label) {
+            const value = inputElement.value.trim();
+            if (!value) return;
+            
+            fetch(`/inventory/api/check-customer-field/?field=${apiField}&value=${encodeURIComponent(value)}`)
+                .then(res => res.json())
+                .then(data => {
+                    let errorEl = inputElement.parentNode.querySelector('.unique-error');
+
+                    if (data.exists) {
+                        inputElement.classList.add('border-red-500');
+                        if (!errorEl) {
+                            errorEl = document.createElement('p');
+                            errorEl.className = 'text-rose-600 text-[11px] font-bold mt-1 pl-1 flex items-center gap-1 unique-error';
+                            inputElement.parentNode.appendChild(errorEl);
+                        }
+                        errorEl.innerHTML = `<i data-lucide="alert-circle" class="w-3 h-3"></i> ${label} already exists in system.`;
+                        lucide.createIcons();
+                    } else {
+                        inputElement.classList.remove('border-red-500');
+                        if (errorEl) errorEl.remove();
+                    }
+                })
+                .catch(err => console.error("Validation failed:", err));
+        }
+
+        function bindFormsetUniqueness(container = document) {
+            // Formset Emails
+            const formsetEmails = container.querySelectorAll('input[name*="contacts"][name*="email"], input[name*="addresses"][name*="email"]');
+            formsetEmails.forEach(input => {
+                if (input.dataset.uniqueBound) return;
+                input.dataset.uniqueBound = "true";
+                input.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    const pattern = /^[A-Za-z0-9._]+@[A-Za-z0-9._]+\.[A-Za-z]{2,}$/;
+                    if (pattern.test(value)) {
+                        checkUniqueness('email', this, 'Email Address');
+                    }
+                });
+            });
+
+            // Formset Phones/Mobiles
+            const formsetPhones = container.querySelectorAll('input[name*="phone"], input[name*="mobile"]');
+            formsetPhones.forEach(input => {
+                // Target only formset inputs that include the prefix index dash ('-')
+                if (!input.name.includes('-')) return; 
+
+                if (input.dataset.uniqueBound) return;
+                input.dataset.uniqueBound = "true";
+                input.addEventListener('blur', function() {
+                    const value = this.value.trim();
+                    if (value.length >= 10) {
+                        checkUniqueness('mobile', this, 'Phone Number');
+                    }
+                });
+            });
+        }
+
+     document.addEventListener('DOMContentLoaded', () => {
+
+        // ==== GST ====
+        const gst = document.querySelector('[name="gst_number"]');
+        if (gst) {
+            gst.addEventListener('blur', function() {
+                checkUniqueness('gst_number', this, 'GST Number');
+            });
+        }
+
+        // ==== EMAIL VALIDATION (Main Profile) ====
+        const email = document.querySelector('input[name="email"]');
+
+        if (email) {
+            email.addEventListener('input', function () {
+                const value = this.value.trim();
+                const emailPattern = /^[A-Za-z0-9._]+@[A-Za-z0-9._]+\.[A-Za-z]{2,}$/;
+
+                let error = document.getElementById("email-format-error");
+
+                if (!error) {
+                    error = document.createElement("p");
+                    error.id = "email-format-error";
+                    error.className = "text-rose-600 text-[11px] font-bold mt-1";
+                    this.parentNode.appendChild(error);
+                }
+
+                if (value && !emailPattern.test(value)) {
+                    this.classList.add("border-red-500");
+                    error.innerText = "Enter a valid email address";
+                } else {
+                    this.classList.remove("border-red-500");
+                    error.innerText = "";
+                }
+            });
+
+            email.addEventListener('blur', function() {
+                const value = this.value.trim();
+                const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (emailPattern.test(value)) {
+                    checkUniqueness('email', this, 'Email');
+                }
+            });
+        }
+
+        // ==== MAIN MOBILE VALIDATION ====
+        const mainMobile = document.querySelector('input[name="mobile"]');
+        if (mainMobile) {
+            mainMobile.addEventListener('blur', function() {
+                const value = this.value.trim();
+                if (value.length >= 10) {
+                    checkUniqueness('mobile', this, 'Mobile Number');
+                }
+            });
+        }
+
+        // Bind formsets on load
+        bindFormsetUniqueness();
+
+        // ==== CONTACT EMAIL VALIDATION ====
+            function validateContactEmail(input) {
+                const value = input.value.trim();
+                const pattern = /^[A-Za-z0-9._]+@[A-Za-z0-9._]+\.[A-Za-z]{2,}$/;
+
+                let wrapper = input.closest('.space-y-2');
+                let error = wrapper.querySelector(".contact-email-error");
+
+                if (!error) {
+                    error = document.createElement("p");
+                    error.className = "text-rose-600 text-[11px] font-bold mt-1 contact-email-error";
+                    wrapper.appendChild(error);
+                }
+
+                if (value && !pattern.test(value)) {
+                    input.classList.add("border-red-500");
+                    error.innerText = "Enter a valid email address";
+                    return false;
+                } else {
+                    input.classList.remove("border-red-500");
+                    error.innerText = "";
+                    return true;
+                }
+            }
+
+            function bindContactEmailValidation(container = document) {
+                const emails = container.querySelectorAll('input[name*="contacts"][name*="email"]');
+
+                emails.forEach(input => {
+                    if (input.dataset.bound === "true") return;
+
+                    input.dataset.bound = "true";
+
+                    input.addEventListener("input", function () {
+                        validateContactEmail(this);
+                    });
+                });
+            }
+
+            // run once
+            bindContactEmailValidation();
+
+        document.body.addEventListener('input', (e) => {
+            if (e.target.name && e.target.name.includes('place_of_supply')) {
+                e.target.value = e.target.value.replace(/[^A-Za-z0-9 ]/g, '');
+            }
+        });
+
+        // ==== PHONE + ZIP ====
+        document.body.addEventListener('input', (e) => {
+            if (e.target.name && e.target.name.includes('phone')) {
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 10);
+            }
+            if (e.target.name && e.target.name.includes('zip_code')) {
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 6);
+            }
+        });
+
+        // ==== TEXT ONLY ====
+        document.body.addEventListener('input', (e) => {
+            if (e.target.classList.contains('custom-text-only-content')) {
+                e.target.value = e.target.value.replace(/[^A-Za-z ]/g, "");
+            }
+        });
+
+        // ==== CREDIT LIMIT (UPDATED) ====
+        const creditInput = document.querySelector('[name="credit_limit"]');
+        const creditError = document.getElementById("credit-limit-error");
+
+        if (creditInput && creditError) {
+            creditInput.addEventListener("input", function() {
+                const val = this.value.trim();
+                let hasError = false;
+
+                if (val !== "") {
+                    if (isNaN(val)) {
+                        hasError = true;
+                        creditError.innerText = "Enter a valid numeric value.";
+                    } else {
+                        // Explicitly check the max 8 digits before decimal server rule
+                        const parts = val.split('.');
+                        if (parts[0].length > 8) {
+                            hasError = true;
+                            creditError.innerText = "Ensure that there are no more than 8 digits before the decimal point.";
+                        }
+                    }
+                }
+
+                if (hasError) {
+                    this.classList.add("border-red-500");
+                    creditError.classList.remove("hidden");
+                } else {
+                    this.classList.remove("border-red-500");
+                    creditError.classList.add("hidden");
+                }
+            });
+        }
+
+    });
+
+        // ==== LOGOUT FLOW ====
+        const lModal = document.getElementById('logout-modal');
+        const lContent = document.getElementById('modal-content');
+        const lLoader = document.getElementById('logout-loader');
+        const lForm = document.getElementById('logout-form');
+
+        function openLogoutModal() {
+            lModal.classList.remove('hidden');
+            setTimeout(() => { lContent.classList.remove('scale-95', 'opacity-0'); }, 10);
+        }
+
+        function closeLogoutModal() {
+            lContent.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => { lModal.classList.add('hidden'); }, 300);
+        }
+
+        lForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            closeLogoutModal();
+            setTimeout(() => {
+                lLoader.classList.remove('hidden');
+                // Packing animation duration before final redirect
+                setTimeout(() => { this.submit(); }, 1500);
+            }, 300);
+        });
+
+        // ==== FINAL STEP CONTROL ====
+        document.addEventListener("DOMContentLoaded", function () {
+            
+            // 1. Ensure JS-managed placeholders remain hidden initially
+            const jsErrorIds = ['credit-limit-error', 'email-format-error'];
+            jsErrorIds.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) {
+                    el.classList.add('hidden');
+                }
+            });
+
+            // 2. Make Django server-side error messages visible immediately (Exclude JS managed ones)
+            document.querySelectorAll(".tab-content p.text-rose-600:not(#credit-limit-error):not(#email-format-error):not(.contact-email-error):not(.dynamic-error)").forEach(errEl => {
+                errEl.style.display = "flex";
+                const wrapper = errEl.closest('.space-y-2') || errEl.closest('.w-full.min-w-0.relative');
+                if (wrapper) {
+                    const input = wrapper.querySelector('input, select, textarea');
+                    if (input) input.classList.add('border-red-500');
+                }
+            });
+
+            function detectErrorStep() {
+                const hasErr = (selector) => {
+                    return document.querySelector(selector) !== null;
+                };
+                
+                // Only consider it an error step if there's an active red border or a visible Django server error
+                if (hasErr("#addresses .border-red-500, #addresses p.text-rose-600:not(.hidden):not(#credit-limit-error):not(.dynamic-error)")) return 1;
+                if (hasErr("#contacts .border-red-500, #contacts p.text-rose-600:not(.hidden):not(#credit-limit-error):not(.dynamic-error)")) return 2;
+                if (hasErr("#basic .border-red-500, #basic p.text-rose-600:not(.hidden):not(#credit-limit-error):not(.dynamic-error)")) return 0;
+                return 0;
+            }
+
+            currentStep = detectErrorStep();
+            showStep(currentStep);
+
+            // Highlight custom dropdowns if their select is errored
+            document.querySelectorAll(".border-red-500, .bg-red-50").forEach(el => {
+                if (el.tagName === "SELECT" && el.nextElementSibling?.classList.contains("custom-dropdown")) {
+                    const btn = el.nextElementSibling.querySelector(".dropdown-btn");
+                    if (btn) {
+                        btn.classList.remove("border-slate-200", "bg-white");
+                        btn.classList.add("border-red-500", "bg-red-50");
+                    }
+                }
+            });
+
+            // Focus first error
+            const firstError = document.querySelector(".border-red-500, .bg-red-50");
+            if (firstError) {
+                firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+                firstError.focus();
+            }
+        });
+    </script>
+
+
+<script>
+document.getElementById("customerForm").addEventListener("submit", function(e) {
+
+    // (UPDATED LOGIC) Check for lingering Django server errors, ignoring hidden JS placeholders
+    const hasServerErrors = Array.from(document.querySelectorAll(
+        "#basic p.text-rose-600:not(#credit-limit-error):not(#email-format-error):not(.dynamic-error), " +
+        "#addresses p.text-rose-600:not(.contact-email-error):not(.dynamic-error), " +
+        "#contacts p.text-rose-600:not(.contact-email-error):not(.dynamic-error)"
+    )).filter(err => !err.classList.contains('hidden') && err.style.display !== 'none' && err.innerText.trim() !== '');
+
+    if (hasServerErrors.length > 0) {
+        e.preventDefault();
+        hasServerErrors[0].scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+    }
+    
+    // Check if any fields have a red border (active JS or Server error not yet resolved)
+    const errorFields = document.querySelectorAll('.border-red-500');
+    if (errorFields.length > 0) {
+         e.preventDefault();
+         errorFields[0].scrollIntoView({ behavior: "smooth", block: "center" });
+         return;
+    }
+    
+    let valid = true;
+
+    const contactEmails = document.querySelectorAll('input[name*="contacts"][name*="email"]');
+
+    contactEmails.forEach(input => {
+        const value = input.value.trim();
+        const pattern = /^[A-Za-z0-9._]+@[A-Za-z0-9._]+\.[A-Za-z]{2,}$/;
+
+        let wrapper = input.closest('.space-y-2');
+        let error = wrapper.querySelector(".contact-email-error");
+
+        if (!error) {
+            error = document.createElement("p");
+            error.className = "text-rose-600 text-[11px] font-bold mt-1 contact-email-error";
+            wrapper.appendChild(error);
+        }
+
+        if (value && !pattern.test(value)) {
+            input.classList.add("border-red-500");
+            error.innerText = "Enter a valid email address";
+            valid = false;
+        } else {
+            input.classList.remove("border-red-500");
+            error.innerText = "";
+        }
+    });
+
+    if (!valid) {
+        e.preventDefault();
+
+        const firstError = document.querySelector(".contact-email-error");
+        if (firstError) {
+            firstError.scrollIntoView({ behavior: "smooth", block: "center" });
+        }
+
+        return; 
+    }
+    // ==== EXISTING BASIC EMAIL LOGIC ====
+    const email = document.querySelector('input[name="email"]');
+if (email) {
+    email.addEventListener('input', function () {
+        this.value = this.value.replace(/[^A-Za-z0-9@._]/g, '');
+    });
+}
+
+    if (email) {
+        const value = email.value.trim();
+        const emailPattern = /^[A-Za-z0-9._]+@[A-Za-z0-9._]+\.[A-Za-z]{2,}$/;
+
+        if (value && !emailPattern.test(value)) {
+            e.preventDefault();
+            email.classList.add("border-red-500");
+
+            let error = document.getElementById("email-format-error");
+            if (!error) {
+                error = document.createElement("p");
+                error.id = "email-format-error";
+                error.className = "text-rose-600 text-[11px] font-bold mt-1";
+                email.parentNode.appendChild(error);
+            }
+            error.innerText = "Enter a valid email address";
+        }
+    }
+});
+        // ==== EXISTING (UNCHANGED) ====
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('input[name*="city"]').forEach(input => {
+                input.setAttribute("maxlength", "30");
+                input.addEventListener('input', function () {
+                    if (this.value.length > 30) {
+                        this.value = this.value.slice(0, 30);
+            }
+        });
+    });
+});
+</script>
+</body>
+</html>

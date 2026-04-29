@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company.name }} | Stock Aging Report</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .active-nav { background-color: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+    </style>
+</head>
+
+<body class="bg-slate-50 text-slate-900 overflow-hidden">
+
+<div class="flex h-screen overflow-hidden">
+
+    <!-- Sidebar (Consistent with StockMaster Portal) -->
+    <aside id="sidebar" class="w-64 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shrink-0">
+        <div class="p-6 flex items-center gap-3 border-b border-slate-100">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="building-2" class="w-6 h-6"></i>
+            </div>
+            <div class="overflow-hidden sidebar-text">
+                <h1 class="font-bold text-lg leading-none truncate">{{ company.name }}</h1>
+                <p class="text-[10px] text-slate-400 font-bold uppercase mt-1 tracking-widest">Enterprise</p>
+            </div>
+        </div>
+
+                                            <nav class="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar w-full">
+                <a href="{% url 'company_dashboard' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'company_dashboard' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors group text-left">
+                    <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Business Ops</p>
+                </div>
+
+                <a href="{% url 'product_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg {% if request.resolver_match.url_name in 'product_list add_product edit_product product_stock_breakdown inventory_history' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} transition-colors"
+                   data-title="My Inventory">
+                    <i data-lucide="package-search" class="w-5 h-5"></i>
+                    <span class="sidebar-text">My Inventory</span>
+                </a>
+
+                <a href="{% url 'category_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'category_list edit_category' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg" data-title="Categories">
+                    <i data-lucide="layers" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Categories</span>
+                </a>
+
+                <a href="/inventory/batches/" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'batch_stock_list adjust_batch_stock' or request.path == '/inventory/batches/' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="boxes" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Batch Stock</span>
+                </a>
+
+                <a href="{% url 'sales_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'sales_orders add_sales_order sales_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Sales Orders</span>
+                </a>
+
+
+                <!-- PURCHASES -->
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Purchases
+                    </p>
+                </div>
+
+                <a href="{% url 'vendor_list' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'vendor_list add_vendor edit_vendor' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="truck" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Vendors</span>
+                </a>
+
+                <a href="{% url 'purchase_orders' %}" class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'purchase_orders add_purchase_order purchase_order_detail' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="file-text" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Purchase Orders</span>
+                </a>
+
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        Customers
+                    </p>
+                </div>
+
+                <a href="{% url 'customer_list' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'customer_list customer_add customer_edit' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg transition-colors">
+                    <i data-lucide="users" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Customers</span>
+                </a>
+
+                <div class="pt-4 pb-2 px-4 sidebar-text">
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Reporting</p>
+                </div>
+
+                <!-- ABC Inventory Classification -->
+                <a href="{% url 'abc_inventory_classification' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'abc_inventory_classification' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="layers" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">ABC Inventory Classification</span>
+                </a>
+
+                <!-- Stock Movement -->
+                <a href="{% url 'stock_movement_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'stock_movement_report' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Stock Movement</span>
+                </a>
+
+                <!-- Fast / Slow Products -->
+                <a href="{% url 'fast_slow_products_report' %}" 
+                   class="nav-item flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name in 'fast_slow_products_report fast_slow_products_view' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="activity" class="w-5 h-5 sidebar-icon"></i>
+                    <span class="sidebar-text">Fast / Slow Products</span>
+                </a>
+
+                <a href="{% url 'reorder_suggestions' %}"
+                   class="nav-item w-full flex items-center gap-3 px-4 py-3 text-sm font-medium {% if request.resolver_match.url_name == 'reorder_suggestions' %}active-nav{% else %}text-slate-600 hover:bg-slate-100{% endif %} rounded-lg">
+                    <i data-lucide="shopping-cart" class="w-5 h-5"></i>
+                    <span class="sidebar-text">Reorder Suggestions</span>
+                </a>
+            </nav>
+
+        <div class="p-4 border-t border-slate-100">
+            <button class="flex items-center gap-3 w-full px-4 py-3 text-sm font-medium text-rose-600 hover:bg-rose-50 rounded-lg transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+                <span class="sidebar-text">Logout</span>
+            </button>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        
+        <!-- Header -->
+        <header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-8 shrink-0">
+            <div class="flex items-center gap-4">
+                <button id="toggle-sidebar" class="p-2 hover:bg-slate-100 rounded-lg text-slate-500">
+                    <i data-lucide="menu" class="w-5 h-5"></i>
+                </button>
+                <nav class="flex text-sm text-slate-500 gap-2 items-center">
+                    <a href="/company/dashboard/" class="hover:text-indigo-600 transition-colors">Dashboard</a>
+                    <i data-lucide="chevron-right" class="w-4 h-4 text-slate-300"></i>
+                    <span class="font-semibold text-slate-800 tracking-tight">Stock Aging Report</span>
+                </nav>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold border-2 border-white shadow-sm">
+                    {{ request.user.username|slice:":1"|upper }}
+                </div>
+            </div>
+        </header>
+
+        <!-- Scrollable Content -->
+        <div class="flex-1 overflow-y-auto p-8 custom-scrollbar">
+            
+            <div class="max-w-7xl mx-auto space-y-8">
+                
+                <!-- Page Title -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold tracking-tight text-slate-900">Stock Aging Report</h2>
+                        <p class="text-slate-500 text-sm">Categorized view of current inventory by time since arrival.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all shadow-sm">
+                            <i data-lucide="download" class="w-4 h-4"></i> Export Ledger
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Snapshot Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Fresh Stock</span>
+                            <i data-lucide="zap" class="w-4 h-4 text-emerald-500"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800">0–30 Days</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ aging_data.0_30|length }} Active Batches</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-amber-500 uppercase tracking-widest">Stable Stock</span>
+                            <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800">31–60 Days</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ aging_data.31_60|length }} Batches</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-[10px] font-black text-rose-500 uppercase tracking-widest">High Risk / Slow</span>
+                            <i data-lucide="alert-triangle" class="w-4 h-4 text-rose-500"></i>
+                        </div>
+                        <h3 class="text-2xl font-black text-slate-800">60+ Days</h3>
+                        <p class="text-xs text-slate-400 mt-1">{{ aging_data.60_plus|length }} Batches</p>
+                    </div>
+                </div>
+
+                <!-- Aging Buckets Section -->
+                <div class="space-y-8 pb-12">
+                    
+                    <!-- BUCKET 1: 0-30 Days -->
+                    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 bg-emerald-50/30 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                Fast-Moving / Fresh (0–30 Days)
+                            </h3>
+                            <span class="text-[10px] font-black text-slate-400 uppercase">Recent Receipts</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th class="px-8 py-4">Product Name</th>
+                                        <th class="px-8 py-4">Batch Number</th>
+                                        <th class="px-8 py-4 text-right">Qty in Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    {% for b in aging_data.0_30 %}
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="px-8 py-4 font-bold text-slate-700 text-sm">{{ b.product.name }}</td>
+                                        <td class="px-8 py-4 font-mono text-xs text-slate-500">{{ b.batch_number }}</td>
+                                        <td class="px-8 py-4 text-right font-black text-slate-900">{{ b.quantity }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="px-8 py-10 text-center text-slate-400 text-xs font-medium italic">No stock found in this category.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- BUCKET 2: 31-60 Days -->
+                    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 bg-amber-50/30 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                                Mature Stock (31–60 Days)
+                            </h3>
+                            <span class="text-[10px] font-black text-slate-400 uppercase">Standard Flow</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th class="px-8 py-4">Product Name</th>
+                                        <th class="px-8 py-4">Batch Number</th>
+                                        <th class="px-8 py-4 text-right">Qty in Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    {% for b in aging_data.31_60 %}
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="px-8 py-4 font-bold text-slate-700 text-sm">{{ b.product.name }}</td>
+                                        <td class="px-8 py-4 font-mono text-xs text-slate-500">{{ b.batch_number }}</td>
+                                        <td class="px-8 py-4 text-right font-black text-slate-900">{{ b.quantity }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="px-8 py-10 text-center text-slate-400 text-xs font-medium italic">No stock found in this category.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- BUCKET 3: 60+ Days -->
+                    <section class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="p-6 border-b border-slate-100 bg-rose-50/30 flex justify-between items-center">
+                            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                                Obsolete / High Aging (60+ Days)
+                            </h3>
+                            <span class="text-[10px] font-black text-rose-500 uppercase tracking-widest">Immediate Review</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead class="bg-slate-50 text-slate-400 text-[10px] font-black uppercase tracking-widest">
+                                    <tr>
+                                        <th class="px-8 py-4 text-rose-700">Product Name</th>
+                                        <th class="px-8 py-4">Batch Number</th>
+                                        <th class="px-8 py-4 text-right text-rose-700">Qty in Stock</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    {% for b in aging_data.60_plus %}
+                                    <tr class="hover:bg-rose-50/30 transition-colors">
+                                        <td class="px-8 py-4 font-bold text-slate-800 text-sm">{{ b.product.name }}</td>
+                                        <td class="px-8 py-4 font-mono text-xs text-slate-500">{{ b.batch_number }}</td>
+                                        <td class="px-8 py-4 text-right font-black text-rose-600">{{ b.quantity }}</td>
+                                    </tr>
+                                    {% empty %}
+                                    <tr>
+                                        <td colspan="3" class="px-8 py-10 text-center text-slate-400 text-xs font-medium italic">No slow-moving stock detected. Good job!</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                </div>
+
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    // Initialize Icons
+    lucide.createIcons();
+
+    // Sidebar Toggle
+    const sidebar = document.getElementById('sidebar');
+    const toggleBtn = document.getElementById('toggle-sidebar');
+    
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('w-64');
+        sidebar.classList.toggle('w-20');
+        document.querySelectorAll('.sidebar-text').forEach(el => el.classList.toggle('hidden'));
+    });
+</script>
+
+</body>
+</html>
